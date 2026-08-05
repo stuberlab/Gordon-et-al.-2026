@@ -2,13 +2,12 @@
 
 Reproduction repository for:
 
-> **Gordon et al. (2026)** — *[manuscript title]*
-> *[Journal]*. DOI: [to be added after publication]
+> **Gordon et al. (2026)** — *Lateral hypothalamic control of a spatially organized striatal dopamine landscape during consummatory behavior*
 
 This repository contains all analysis code and pre-computed data files needed
 to reproduce the figures and statistics in the paper. Raw fiber photometry data
 and full session outputs are archived separately on Zenodo:
-https://doi.org/10.5281/zenodo.20801797
+https://doi.org/10.5281/zenodo.21809309
 
 ---
 
@@ -16,7 +15,7 @@ https://doi.org/10.5281/zenodo.20801797
 
 | destination | what is included |
 |-------------|-----------------|
-| **Zenodo** ([10.5281/zenodo.20801797](https://doi.org/10.5281/zenodo.20801797)) | all code, pre-computed CSVs, full session data, GLM outputs |
+| **Zenodo** ([10.5281/zenodo.21809309](https://doi.org/10.5281/zenodo.21809309)) | all code, pre-computed CSVs, full session data, GLM outputs |
 | **GitHub** | all code and pre-computed result CSVs; no raw session data or PDF figure outputs |
 
 ---
