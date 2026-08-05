@@ -1,0 +1,435 @@
+---
+title: "preprocess sessions"
+author: "adam gordon-fennell"
+date: '2023-12-28'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# setup
+## libraries
+```{r}
+# ── packages ──────────────────────────────────────────────────────────────────
+library(tidyverse)
+library(readxl)
+library(zoo)
+library(pracma)
+library(arrow)           # read_feather / write_feather
+arrow::set_cpu_count(4)
+
+# ── project functions ─────────────────────────────────────────────────────────
+source('../functions/params.R')
+source('../functions/theme.R')
+source('../functions/general.R')
+source('../functions/r_general.R')
+source('../functions/stats.R')        # tidy_cormatrix (Step 7)
+source('../functions/analysis_peth.R') # combine_session_fp, combine_session_fp_bl (Step 7)
+source('../functions/r_head_fixed_processing.R')
+source('../functions/compile_data.R')
+source('../logs_and_keys/key_local_directories.R')
+```
+
+## directories
+```{r}
+# ── local session store ───────────────────────────────────────────────────────
+dir_localdata_sessions        <- '../data/sessions/'
+dir_sessions_combined_subject <- '../data/sessions_combined_subject/'
+
+# ── network: TDT fiber photometry server ─────────────────────────────────────
+# dir_tdt set in key_local_directories.R
+dir_tdt_raw       <- str_c(dir_tdt, 'data_raw/')
+dir_tdt_extracted <- str_c(dir_tdt, 'data_extracted/')
+dir_tdt_processed <- str_c(dir_tdt, 'data_processed/')
+
+# ── network: NPM fiber photometry server ─────────────────────────────────────
+# dir_npm set in key_local_directories.R
+dir_npm_raw       <- str_c(dir_npm, 'data_raw/')
+dir_npm_extracted <- str_c(dir_npm, 'data_extracted/')
+dir_npm_processed <- str_c(dir_npm, 'data_processed/')
+
+# ── arduino behavioral data ───────────────────────────────────────────────────
+# dir_arduino_raw set in key_local_directories.R
+dir_arduino_raw_local  <- '../data/arduino/raw/'
+dir_arduino_extraction <- '../data/arduino/extracted/'
+dir_arduino_processed  <- '../data/arduino/processed/'
+```
+
+## logs / keys
+```{r}
+# ── analysis inclusion / exclusion log (local xlsx) ──────────────────────────
+# sheets: subjects | fp | experiments
+log_analysis_subjects <- read_xlsx('../logs_and_keys/log_data_analysis.xlsx', sheet = 'subjects',    na = c('NA', ''))
+log_analysis_fp       <- read_xlsx('../logs_and_keys/log_data_analysis.xlsx', sheet = 'fp',          na = c('NA', ''))
+log_analysis_exp      <- read_xlsx('../logs_and_keys/log_data_analysis.xlsx', sheet = 'experiments', na = c('NA', ''))
+```
+
+```{r}
+# ── session / hardware logs ───────────────────────────────────────────────────
+
+# arduino event key
+key_events          <- read.csv('../logs_and_keys/key_events_arduino.csv')
+
+# multi-spout behavioral sessions and spout identity
+log_data_multi      <- read.csv('../logs_and_keys/log_behavior_headfixed_multispout_sessions.csv', na.strings = c('NA', ''))
+log_multi_spout_ids <- read.csv('../logs_and_keys/log_behavior_headfixed_multispout_soutids.csv',  na.strings = c('NA', ''))
+
+# fiber photometry hardware logs
+log_tdt             <- read.csv('../logs_and_keys/log_fiberphotometry_tdt.csv', na.strings = c('', 'NA'))
+log_npm             <- read.csv('../logs_and_keys/log_fiberphotometry_npm.csv', na.strings = c('', 'NA'))
+
+# fiber placement coordinates
+log_placements      <- read.csv('../logs_and_keys/log_fiber_placements.csv', na.strings = c('', 'NA'))
+```
+
+
+# execution
+## behavior
+```{r}
+# ── step 1: copy raw arduino files from network to local ─────────────────────
+manual_blocknames <- log_analysis_fp %>% 
+  left_join(log_analysis_subjects %>% select(subject, remove)) %>%
+  filter(remove == 0) %>%
+  pull(blockname)
+
+import_arduino(manual_blocknames, dir_arduino_raw, dir_arduino_raw_local, overwrite = 0)
+```
+
+```{r, message = FALSE}
+# ── step 2: extract serial output and process multi-spout behavior ────────────
+
+# extract raw arduino serial data into event / param / param_dynamic tables
+extract_serial_output(
+  dir_arduino_raw_local,
+  key_events,
+  dir_arduino_extraction,
+  manual_experiments = NA,
+  manual_blocknames  = manual_blocknames,
+  file_format_output = 'csv',
+  overwrite = 0)
+
+# process extracted data into trial-level behavioral summaries
+process_multi_spout(
+  dir_arduino_extraction,
+  dir_arduino_processed,
+  log_data_multi,
+  log_multi_spout_ids,
+  file_format_output    = 'csv',
+  manual_fns            = manual_blocknames,
+  overwrite             = 0,
+  time_bin_width        = 100,
+  time_bin_range        = c(0, 3000),
+  session_trial_width   = 10,
+  session_trial_range   = c(0, 100))
+```
+
+
+## fiber photometry
+```{r}
+# ── build session import key ──────────────────────────────────────────────────
+# join log_analysis_fp (session-level inclusion flags) with log_analysis_exp
+# (experiment-level metadata including data directories)
+import_key <- log_analysis_fp %>%
+  select(experiment, subject, blockname, procedure, exclude, deprivation, imaging) %>%
+  left_join(log_analysis_exp, by = "experiment") %>%
+  filter(is.na(exclude) | exclude != 1)           # drop excluded sessions
+
+# multi-spout sessions only (baseline, fa_, acq excluded from paper)
+import_key_multi <- import_key %>%
+  filter(str_detect(procedure, 'multi'))
+```
+
+```{r}
+# ── step 3: copy behavioral and FP data into per-session local folders ────────
+# output: ../data/sessions/<blockname>/<blockname>_*.csv/.feather
+
+locally_save_multispout_data_behavior(import_key_multi, dir_localdata_sessions, overwrite = 0)
+locally_save_multispout_data_fp_peth(import_key_multi, dir_localdata_sessions, dir_tdt, dir_npm, overwrite = 0)
+```
+
+```{r}
+# ── step 3b: copy and trim baseline FP streams into per-session local folders ─
+# blockname_baselines: sessions where the baseline was recorded as a separate file
+blockname_baselines <- c('2022_06_09_aaw08', '2022_06_09_aaw09', '2023_04_06_aaw17')
+
+locally_save_multispout_data_fp_baseline(import_key_multi, dir_localdata_sessions, dir_tdt, dir_npm,
+                                         blockname_baselines = blockname_baselines, overwrite = 0)
+```
+
+```{r}
+# ── step 4: preprocess FP peri-event time series ─────────────────────────────
+# computes z-score, assigns brain-region IDs, and saves preprocessed feathers
+multispout_preprocess_fp_peth(import_key_multi, dir_localdata_sessions, log_tdt, log_npm, overwrite = 0)
+```
+
+```{r}
+# ── step 4b: preprocess baseline FP streams ──────────────────────────────────
+# z-scores baseline signal and computes lha_ratio
+multispout_preprocess_fp_baseline(import_key_multi, dir_localdata_sessions, log_tdt, log_npm)
+```
+
+```{r}
+# ── step 5: compute per-session summary statistics ───────────────────────────
+summarise_sessions(import_key_multi, dir_localdata_sessions, overwrite = 0)
+```
+
+```{r}
+# ── step 6: compute FP signal quality metrics ────────────────────────────────
+# flags sessions / regions with poor signal for downstream filtering
+get_signal_quality_control(dir_localdata_sessions, overwrite = 0)
+```
+
+
+## inter-regional correlation
+```{r}
+# ── step 7 setup: load QC metrics and define excluded subjects ────────────────
+# requires quality_metrics.csv files written by step 6
+fns_qc_metrics      <- list.files(dir_localdata_sessions, pattern = 'quality_metrics.csv', recursive = T, full.names = T)
+combined_qc_metrics <- bind_rows(lapply(fns_qc_metrics, read.csv))
+```
+
+```{r}
+# ── step 7a: STR inter-regional correlation ───────────────────────────────────
+# subjects with all 6 STR fibers (nac, nac_shelllat, nac_corr, dms, dls, ts)
+# reads: data/sessions/*_streams_baseline_preprocessed.feather
+#        data/sessions/*_streams_peth_preprocessed.feather
+# writes: data/sessions_combined_subject/{subject}_{set_id}/corelation/streams_*.csv/.feather
+
+str_regions <- c('nac', 'nac_shelllat', 'nac_corr', 'dms', 'dls', 'ts')
+
+blocknames_6fibers <- log_analysis_fp %>%
+  filter(is.na(exclude) | exclude != 1) %>%
+  left_join(log_npm %>% select(blockname, region), by = 'blockname') %>%
+  left_join(combined_qc_metrics %>% select(blockname, region, exclude_poor_signal),
+            by = c('blockname', 'region')) %>%
+  filter(exclude_poor_signal == 0 | is.na(exclude_poor_signal)) %>%
+  select(-exclude_poor_signal) %>%
+  format_regions('region', key_regions) %>%
+  filter_placements('exclude_da_consumption') %>%
+  group_by(blockname) %>%
+  mutate(region_count = n()) %>%
+  ungroup() %>%
+  filter(region_count == 6) %>%
+  get_set_id() %>%
+  select(subject, blockname, procedure, set_id) %>%
+  unique() %>%
+  filter(!is.na(set_id))
+
+subject_x_set <- blocknames_6fibers %>%
+  select(subject, set_id) %>%
+  unique()
+
+print(str_c('Step 7a: ', nrow(subject_x_set), ' subject × set_id combinations'))
+
+for (n_subject_x_set in seq(1, nrow(subject_x_set))) {
+
+  loop_subject_x_set <- subject_x_set[n_subject_x_set, ]
+  print(str_c(' ~ ', loop_subject_x_set$subject, '_', loop_subject_x_set$set_id,
+              ' [', n_subject_x_set, ' / ', nrow(subject_x_set), ']'))
+
+  loop_dir_output <- str_c(dir_sessions_combined_subject,
+                           loop_subject_x_set$subject, '_', loop_subject_x_set$set_id,
+                           '/corelation/')
+  if (!dir.exists(loop_dir_output)) dir.create(loop_dir_output, recursive = T)
+
+  loop_blocknames <- blocknames_6fibers %>%
+    filter(subject == loop_subject_x_set$subject, set_id == loop_subject_x_set$set_id) %>%
+    pull(blockname)
+
+  # baseline: load, pivot wide, save feather
+  df_bl <- combine_session_fp_bl(loop_blocknames, dir_localdata_sessions) %>%
+    mutate(subject = loop_subject_x_set$subject, set_id = loop_subject_x_set$set_id) %>%
+    select(blockname, subject, set_id, time, region, zscore) %>%
+    spread(region, zscore)
+
+  df_bl %>% write_feather(str_c(loop_dir_output, 'streams_baseline_cor_data.feather'))
+
+  # peth: load, filter lick trials, pivot wide, save feather
+  df_peth <- combine_session_fp(loop_blocknames, dir_localdata_sessions) %>%
+    mutate(subject = loop_subject_x_set$subject, set_id = loop_subject_x_set$set_id) %>%
+    filter(trial_lick == 1) %>%
+    filter(time_rel > -3, time_rel <= 9)
+
+  n_sessions <- df_peth %>% filter(time_rel == 0) %>% select(blockname) %>% unique() %>% nrow()
+  n_trial    <- df_peth %>% filter(time_rel == 0) %>% select(blockname, trial_num) %>% unique() %>% nrow()
+  tibble(n_sessions = n_sessions, n_trial = n_trial, filt_lick = 1) %>%
+    write_csv(str_c(loop_dir_output, 'streams_peth_cor_meta.csv'))
+
+  df_peth <- df_peth %>%
+    select(blockname, subject, set_id, trial_num, solution, time_rel, region, zscore_blsub) %>%
+    spread(region, zscore_blsub)
+
+  df_peth %>% write_feather(str_c(loop_dir_output, 'streams_peth_cor_data.feather'))
+
+  # skip subjects with too few trials
+  trial_counts <- df_peth %>%
+    select(all_of(c(str_regions, 'subject', 'set_id', 'solution', 'time_rel'))) %>%
+    group_by(subject, set_id, solution, time_rel) %>%
+    summarise(count = n(), .groups = 'drop') %>%
+    pull(count)
+
+  if (min(trial_counts) > 4) {
+
+    # baseline correlation matrix
+    tidy_cormatrix(df_bl, str_regions, c('subject', 'set_id')) %>%
+      format_regions('var_y', key_regions) %>%
+      format_regions('var_x', key_regions) %>%
+      write_csv(str_c(loop_dir_output, 'streams_baseline_corr.csv'))
+
+    # peth correlation — per timepoint
+    tidy_cormatrix(df_peth, str_regions, c('subject', 'set_id', 'time_rel')) %>%
+      format_regions('var_y', key_regions) %>%
+      format_regions('var_x', key_regions) %>%
+      write_csv(str_c(loop_dir_output, 'streams_peth_corr_timerel.csv'))
+
+    # peth correlation — pre / sustained / post windows
+    df_peth %>%
+      mutate(time_rel_bin = case_when(
+        time_rel > -2 & time_rel < 0 ~ 'Pre',
+        time_rel >= 1 & time_rel < 3 ~ 'Sustained',
+        time_rel >= 6 & time_rel < 8 ~ 'Post'
+      )) %>%
+      filter(!is.na(time_rel_bin)) %>%
+      tidy_cormatrix(str_regions, c('subject', 'set_id', 'time_rel_bin')) %>%
+      format_regions('var_y', key_regions) %>%
+      format_regions('var_x', key_regions) %>%
+      write_csv(str_c(loop_dir_output, 'streams_peth_corr_windows.csv'))
+
+    # peth correlation — per solution × timepoint
+    tidy_cormatrix(df_peth, str_regions, c('subject', 'set_id', 'solution', 'time_rel')) %>%
+      format_regions('var_y', key_regions) %>%
+      format_regions('var_x', key_regions) %>%
+      write_csv(str_c(loop_dir_output, 'streams_peth_corr_timerel_sol.csv'))
+
+  } else {
+    print('  ** TOO FEW TRIALS FOR CORRELATION — SKIPPING **')
+  }
+}
+```
+
+```{r}
+# ── step 7b: LHA/STR inter-regional correlation ───────────────────────────────
+# subjects with simultaneous LHA + STR recordings (experiment == 'acr')
+# requires 5 physical fiber sites: LHA, nac, dms, dls, ts
+# (LHA later expands into 3 derived signals — lha_gaba/lha_glut/lha_ratio — via format_regions())
+# reads / writes same pattern as step 7a; files prefixed 'lhastr_'
+
+lhastr_regions <- c('lha_gaba', 'lha_glut', 'lha_ratio', 'nac', 'dms', 'dls', 'ts')
+
+blocknames_lhastrcor <- log_analysis_fp %>%
+  filter(is.na(exclude) | exclude != 1) %>%
+  filter(experiment == 'acr') %>%
+  left_join(log_npm %>% select(blockname, region), by = 'blockname') %>%
+  left_join(combined_qc_metrics %>% select(blockname, region, exclude_poor_signal),
+            by = c('blockname', 'region')) %>%
+  filter(exclude_poor_signal == 0 | is.na(exclude_poor_signal)) %>%
+  select(-exclude_poor_signal) %>%
+  format_regions('region', key_regions) %>%
+  mutate(region = as.character(region)) %>%
+  mutate(region = ifelse(is.na(region), 'LHA', region)) %>%
+  left_join(log_placements %>% select(subject, region = target, exclude_da_consumption),
+            by = c('region', 'subject')) %>%
+  filter(exclude_da_consumption != 1) %>%
+  select(-exclude_da_consumption) %>%
+  group_by(blockname) %>%
+  mutate(region_count = n()) %>%
+  ungroup() %>%
+  filter(region_count == 5) %>%
+  get_set_id() %>%
+  select(subject, blockname, procedure, set_id) %>%
+  unique() %>%
+  filter(set_id %in% c('wrnacl', 'wrsuc', 'frsuc'))
+
+subject_x_set <- blocknames_lhastrcor %>%
+  select(subject, set_id) %>%
+  unique()
+
+print(str_c('Step 7b: ', nrow(subject_x_set), ' subject × set_id combinations'))
+
+for (n_subject_x_set in seq(1, nrow(subject_x_set))) {
+
+  loop_subject_x_set <- subject_x_set[n_subject_x_set, ]
+  print(str_c(' ~ ', loop_subject_x_set$subject, '_', loop_subject_x_set$set_id,
+              ' [', n_subject_x_set, ' / ', nrow(subject_x_set), ']'))
+
+  loop_dir_output <- str_c(dir_sessions_combined_subject,
+                           loop_subject_x_set$subject, '_', loop_subject_x_set$set_id,
+                           '/corelation/')
+  if (!dir.exists(loop_dir_output)) dir.create(loop_dir_output, recursive = T)
+
+  loop_blocknames <- blocknames_lhastrcor %>%
+    filter(subject == loop_subject_x_set$subject, set_id == loop_subject_x_set$set_id) %>%
+    pull(blockname)
+
+  # baseline: load, pivot wide, save feather
+  df_bl <- combine_session_fp_bl(loop_blocknames, dir_localdata_sessions) %>%
+    mutate(subject = loop_subject_x_set$subject, set_id = loop_subject_x_set$set_id) %>%
+    select(blockname, subject, set_id, time, region, zscore) %>%
+    spread(region, zscore)
+
+  df_bl %>% write_feather(str_c(loop_dir_output, 'lhastr_streams_baseline_cor_data.feather'))
+
+  # peth: load, filter lick trials, pivot wide, save feather
+  df_peth <- combine_session_fp(loop_blocknames, dir_localdata_sessions) %>%
+    mutate(subject = loop_subject_x_set$subject, set_id = loop_subject_x_set$set_id) %>%
+    filter(trial_lick == 1) %>%
+    filter(time_rel > -3, time_rel <= 9)
+
+  n_sessions <- df_peth %>% filter(time_rel == 0) %>% select(blockname) %>% unique() %>% nrow()
+  n_trial    <- df_peth %>% filter(time_rel == 0) %>% select(blockname, trial_num) %>% unique() %>% nrow()
+  tibble(n_sessions = n_sessions, n_trial = n_trial, filt_lick = 1) %>%
+    write_csv(str_c(loop_dir_output, 'lhastr_streams_peth_cor_meta.csv'))
+
+  df_peth <- df_peth %>%
+    select(blockname, subject, set_id, trial_num, solution, time_rel, region, zscore_blsub) %>%
+    spread(region, zscore_blsub)
+
+  df_peth %>% write_feather(str_c(loop_dir_output, 'lhastr_streams_peth_cor_data.feather'))
+
+  # skip subjects with too few trials
+  trial_counts <- df_peth %>%
+    select(all_of(c(lhastr_regions, 'subject', 'set_id', 'solution', 'time_rel'))) %>%
+    group_by(subject, set_id, solution, time_rel) %>%
+    summarise(count = n(), .groups = 'drop') %>%
+    pull(count)
+
+  if (min(trial_counts) > 4) {
+
+    # baseline correlation matrix
+    tidy_cormatrix(df_bl, lhastr_regions, c('subject', 'set_id')) %>%
+      format_regions('var_y', key_regions) %>%
+      format_regions('var_x', key_regions) %>%
+      write_csv(str_c(loop_dir_output, 'lhastr_streams_baseline_corr.csv'))
+
+    # peth correlation — per timepoint
+    tidy_cormatrix(df_peth, lhastr_regions, c('subject', 'set_id', 'time_rel')) %>%
+      format_regions('var_y', key_regions) %>%
+      format_regions('var_x', key_regions) %>%
+      write_csv(str_c(loop_dir_output, 'lhastr_streams_peth_corr_timerel.csv'))
+
+    # peth correlation — pre / sustained / post windows
+    df_peth %>%
+      mutate(time_rel_bin = case_when(
+        time_rel > -2 & time_rel < 0 ~ 'Pre',
+        time_rel >= 1 & time_rel < 3 ~ 'Sustained',
+        time_rel >= 6 & time_rel < 8 ~ 'Post'
+      )) %>%
+      filter(!is.na(time_rel_bin)) %>%
+      tidy_cormatrix(lhastr_regions, c('subject', 'set_id', 'time_rel_bin')) %>%
+      format_regions('var_y', key_regions) %>%
+      format_regions('var_x', key_regions) %>%
+      write_csv(str_c(loop_dir_output, 'lhastr_streams_peth_corr_windows.csv'))
+
+    # peth correlation — per solution × timepoint
+    tidy_cormatrix(df_peth, lhastr_regions, c('subject', 'set_id', 'solution', 'time_rel')) %>%
+      format_regions('var_y', key_regions) %>%
+      format_regions('var_x', key_regions) %>%
+      write_csv(str_c(loop_dir_output, 'lhastr_streams_peth_corr_timerel_sol.csv'))
+
+  } else {
+    print('  ** TOO FEW TRIALS FOR CORRELATION — SKIPPING **')
+  }
+}
+```

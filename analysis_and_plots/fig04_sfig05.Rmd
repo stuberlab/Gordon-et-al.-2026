@@ -1,0 +1,1235 @@
+---
+title: "fig04 / sfig05"
+author: "adam gordon-fennell"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# run all chunks from the project root so relative paths resolve correctly
+knitr::opts_knit$set(root.dir = normalizePath('../'))
+```
+
+# setup
+## libraries
+```{r eval=FALSE}
+source('./logs_and_keys/key_local_directories.R')
+Sys.unsetenv("RETICULATE_PYTHON_FALLBACK")
+Sys.unsetenv("RETICULATE_PYTHON")
+reticulate::use_python(path_python, required = TRUE)
+
+library(tidyverse)
+library(afex)
+library(emmeans)
+library(janitor)
+library(readxl)
+library(ggh4x)
+library(arrow)
+library(zoo)
+library(lubridate)
+library(patchwork)
+library(ggbeeswarm)
+library(ggpubr)
+library(pals)
+library(boot)
+library(corrplot)
+library(Hmisc)
+library(plotly)
+
+arrow::set_cpu_count(4)
+
+source('./functions/params.R')
+source('./functions/theme.R')
+source('./functions/general.R')
+source('./functions/r_general.R')
+source('./functions/r_plots.R')
+source('./functions/stats.R')
+source('./functions/pca.R')
+source('./functions/analysis_peth.R')
+source('./functions/plotting_placements.R')
+```
+
+## directories
+```{r eval=FALSE}
+dir_output <- './analysis_and_plots/fig04_sfig05/'
+dir_data   <- './data/fig04_sfig05/'
+
+dir.create(dir_output,                    recursive = TRUE, showWarnings = FALSE)
+dir.create(str_c(dir_output, 'b/'),       recursive = TRUE, showWarnings = FALSE)
+dir.create(str_c(dir_output, 'c/'),       recursive = TRUE, showWarnings = FALSE)
+dir.create(str_c(dir_output, 'd/'),       recursive = TRUE, showWarnings = FALSE)
+dir.create(str_c(dir_output, 'e/'),       recursive = TRUE, showWarnings = FALSE)
+dir.create(str_c(dir_output, 'f/'),       recursive = TRUE, showWarnings = FALSE)
+dir.create(str_c(dir_output, 'g/'),       recursive = TRUE, showWarnings = FALSE)
+dir.create(str_c(dir_output, 'h/'),       recursive = TRUE, showWarnings = FALSE)
+dir.create(str_c(dir_output, 'sfig05a/'), recursive = TRUE, showWarnings = FALSE)
+dir.create(str_c(dir_output, 'sfig05b/'), recursive = TRUE, showWarnings = FALSE)
+dir.create(str_c(dir_output, 'sfig05c/'), recursive = TRUE, showWarnings = FALSE)
+dir.create(str_c(dir_output, 'sfig05d/'), recursive = TRUE, showWarnings = FALSE)
+dir.create(str_c(dir_output, 'sfig05e/'), recursive = TRUE, showWarnings = FALSE)
+
+plt_dims <- c(3, 3)
+```
+
+## logs / keys
+```{r eval=FALSE}
+# Fiber placement log — used by plt_str_3d() and plt_corr()
+log_placements <- read.csv('./logs_and_keys/log_fiber_placements.csv',
+                           na.strings = c('', 'NA'))
+```
+
+## keys (fig04/sfig05-specific)
+```{r eval=FALSE}
+# 6-region striatal subset used in the acd inhibition experiment.
+# Shadows key_regions from params.R.
+key_regions <- tibble(
+  region       = c('nac',   'nac_corr', 'nac_shelllat', 'dms', 'dls', 'ts'),
+  region_label = c('NAcCR', 'NAcCC',    'NAcShL',        'DMS', 'DLS', 'TS')
+)
+
+# Group color palette — control / LHA:GABA (vgat) / LHA:Glut (vglut2)
+color_group_combined <- color_values_groupcombined  # c('darkgrey', '#CC2029', '#70BF46')
+```
+
+## functions (fig04/sfig05-specific)
+```{r eval=FALSE}
+# ── format_group_combined ──────────────────────────────────────────────────────
+# Builds group_combined from 'line' and 'group' columns.
+# Produces: 'control', 'vgat_inh', 'vglut2_inh'.
+format_group_combined <- function(df) {
+  df %>%
+    mutate(group_combined = ifelse(line %>% str_detect('vglut2'), 'vglut2', NA)) %>%
+    mutate(group_combined = ifelse(line %>% str_detect('vgat'),   'vgat',   group_combined)) %>%
+    mutate(group_combined = ifelse(tolower(group) == 'mcherry',   'control', group_combined)) %>%
+    mutate(group_combined = ifelse(tolower(group) == 'chrimson',  group_combined %>% str_c('_stim'), group_combined)) %>%
+    mutate(group_combined = ifelse(tolower(group) == 'hr',        group_combined %>% str_c('_inh'),  group_combined))
+}
+
+# ── format_vars ────────────────────────────────────────────────────────────────
+# Converts raw solution and stim_id codes to display labels.
+# solution: 'water' → 'Water', 'nacl100' → '1M NaCl'
+# stim_id:  'lha'   → 'Stim',  'no_stim' → 'No stim'
+format_vars <- function(df) {
+  df %>%
+    mutate(
+      stim_id = case_when(
+        stim_id == 'lha'     ~ 'Stim',
+        stim_id == 'no_stim' ~ 'No stim',
+        TRUE                 ~ stim_id
+      )
+    ) %>%
+    mutate(
+      solution = case_when(
+        solution == 'water'   ~ 'Water',
+        solution == 'nacl100' ~ '1M NaCl',
+        TRUE                  ~ solution
+      )
+    )
+}
+
+# ── plt_corr ──────────────────────────────────────────────────────────────────
+# Plots fiber placement (AP / ML / DV mm) vs. response (var_dep), faceted by
+# group_combined. Returns list: AP, ML, DV ggplot objects + stats_output.
+# Source: abo_analysis_opto_multispout_v02.Rmd (functions section, line ~430)
+plt_corr <- function(df, ylim_all, xlim_ap, xlim_ml, xlim_dv,
+                     var_dep, var_dep_label, plt_dims) {
+
+  plt_data <- df %>%
+    gather('dim', 'mm', starts_with('hit')) %>%
+    mutate(dim = case_when(
+      dim == 'hit_ap' ~ 'AP',
+      dim == 'hit_ml' ~ 'ML',
+      dim == 'hit_dv' ~ 'DV'
+    )) %>%
+    mutate(dim = dim %>% factor(levels = c('AP', 'ML', 'DV')))
+
+  f_plt <- function(plt_data, ylim_all, xlim_ap, xlim_ml, xlim_dv,
+                    var_dep, var_dep_label, plt_dims, plt_dim) {
+    plt <- plt_data %>%
+      filter(dim == plt_dim) %>%
+      ggplot(aes(mm, !!as.name(var_dep), color = group_combined, fill = group_combined)) +
+      geom_hline(yintercept = 0, color = 'darkgrey', size = 0.5) +
+      geom_smooth(method = 'lm', size = 0.3, alpha = 1/5) +
+      geom_jitter(shape = 21, size = 2, color = 'white', stroke = 1/3) +
+      facet_grid(group_combined ~ dim, scales = 'free') +
+      theme_ag01() +
+      scale_color_manual(values = color_group_combined) +
+      scale_fill_manual(values  = color_group_combined) +
+      xlab('MM Relative to bregma') +
+      ylab(var_dep_label) +
+      theme(strip.text.y = element_blank()) +
+      theme(panel.spacing.y = unit(0.75, 'lines'))
+
+    if (plt_dim == 'AP') {
+      plt <- plt +
+        coord_cartesian(ylim = ylim_all, xlim = c(min(xlim_ap), max(xlim_ap)), expand = F, clip = 'off') +
+        stat_cor(method = 'pearson', label.y = ylim_all[2], label.x = -3, size = 2) +
+        scale_x_continuous(breaks = xlim_ap) +
+        theme(axis.title.x = element_blank())
+    }
+    if (plt_dim == 'ML') {
+      plt <- plt +
+        coord_cartesian(ylim = ylim_all, xlim = c(min(xlim_ml), max(xlim_ml)), expand = F, clip = 'off') +
+        stat_cor(method = 'pearson', label.y = ylim_all[2], label.x = 0, size = 2) +
+        scale_x_continuous(breaks = xlim_ml)
+      plt <- plt %>% remove_y_all
+    }
+    if (plt_dim == 'DV') {
+      plt <- plt +
+        coord_cartesian(ylim = ylim_all, xlim = c(min(xlim_dv), max(xlim_dv)), expand = F, clip = 'off') +
+        stat_cor(method = 'pearson', label.y = ylim_all[2], label.x = -6, size = 2) +
+        scale_x_continuous(breaks = xlim_dv) +
+        theme(axis.title.x = element_blank())
+      plt <- plt %>% remove_y_all
+    }
+    return(plt)
+  }
+
+  plt_list <- list()
+  for (plt_dim in c('AP', 'ML', 'DV')) {
+    plt_list[[plt_dim]] <- f_plt(plt_data, ylim_all, xlim_ap, xlim_ml, xlim_dv,
+                                 var_dep, var_dep_label, plt_dims, plt_dim)
+  }
+
+  plt_list[['stats_output']] <- plt_data %>%
+    tidy_cor('mm', var_dep, 'dim', 'group_combined')
+
+  return(plt_list)
+}
+```
+
+---
+
+# preprocessing notes
+
+## behavior (panels B / C / D)
+```{r eval=FALSE}
+# ── PREPROCESSING NOTE ────────────────────────────────────────────────────────
+# The block below documents how the pre-computed CSVs in data/fig04_sfig05/ were
+# produced. Requires Google Sheets credentials and arduino extracted/processed data.
+#
+# Source files:
+#   arduino processed: str_c(dir_exp_abo, 'data/arduino/processed/')
+#   arduino extracted: str_c(dir_exp_abo, 'data/arduino/extracted/')
+#   log_npm:           Google Sheet (url_sheet_npm)
+#   log_data_multi:    Google Sheet (url_sheet_npm_multi)
+#   log_subject:       Google Sheet (url_sheet_subject)
+#   log_opto_stim_ids: above url_sheet_npm_multi, sheet = 'opto_stimulation_ids'
+#
+# Source Rmd:
+#   str_c(dir_writing_lha_da, 'submission01/analysis/analysis_multispout_behavior_optoinhibition.Rmd')
+#   # inhibition behavior [fig04d]     (line ~178)
+#   # lick rasters opto behavior       (line ~258)
+#   # [fig04b]                          (line ~322) → writes fig04c_licking_raster_rep.csv
+#   # binned lick rate [fig4c]          (line ~379) → writes fig04c_binned_lick_subject.csv
+# ─────────────────────────────────────────────────────────────────────────────
+
+# # ── logs / sheets ──────────────────────────────────────────────────────────
+# log_npm <- read_sheet(url_sheet_npm, na = c('','NA'))
+# log_data_multi <- read_sheet(url_sheet_npm_multi, na = c('NA',''))
+# log_subject <- read_sheet(url_sheet_subject, na = 'NA', sheet = 'subject')
+# log_opto_stim_ids <- suppressWarnings(
+#   read_sheet(url_sheet_npm_multi,
+#              sheet = 'opto_stimulation_ids', na = c('NA', ''))
+# ) %>%
+#   select(-today) %>%
+#   filter(experiment == 'acd')
+#
+# # trial-level behavior (produced in analysis_multispout_behavior_optoinhibition.Rmd)
+# trial_summary_behavior <- read.csv(
+#   './data/multispout_behavior_optoinhibition/data_trial_summary.csv') %>%
+#   format_group_combined() %>%
+#   format_vars()
+#
+# # write to repo
+# trial_summary_behavior %>%
+#   write_csv('./data/fig04_sfig05/fig04_licking_trial.csv')
+#
+# # ── arduino data for lick rasters (acd experiment) ────────────────────────
+# dir_arduino_processed <- str_c(dir_exp_abo, 'data/arduino/processed/')
+# dir_arduino_extracted <- str_c(dir_exp_abo, 'data/arduino/extracted/')
+#
+# import_fns <- log_npm %>%
+#   filter(experiment %in% c('acd')) %>%
+#   filter(procedure == 'water_nacl_opto') %>%
+#   filter(exclude == 0) %>%
+#   pull(blockname) %>% unique()
+#
+# data_list <- combined_import(import_directory = dir_arduino_processed,
+#                              filter_strings = import_fns,
+#                              prefixes = NA,
+#                              suffixes = c('_data_trial.csv', '_data_trial_binned.csv', '_data_trial_summary.csv'))
+# data_trial         <- data_list[[1]]
+# data_trial_binned  <- data_list[[2]]
+# data_trial_summary <- data_list[[3]]
+#
+# trial_stim_ids <- return_trial_ids(dir_arduino_extracted, import_fns, 'csv', filt_last = 0) %>%
+#   left_join(log_data_multi %>% select(blockname, experiment, date, subject)) %>%
+#   left_join(log_opto_stim_ids %>%
+#               select(experiment, date, subject, trial_stim_id, stim_power_uw, pulse_frequency, delay, region, id))
+#
+# data_trial <- data_trial %>%
+#   left_join(trial_stim_ids %>% select(blockname, trial_num, id)) %>%
+#   mutate(stim_id = ifelse(is.na(id), 'No Stim', 'Stim'))
+#
+# data_trial_binned <- data_trial_binned %>%
+#   left_join(trial_stim_ids %>% select(blockname, trial_num, id)) %>%
+#   mutate(stim_id = ifelse(is.na(id), 'No Stim', 'Stim'))
+#
+# # ── raster data: representative subjects [fig04b] ─────────────────────────
+# # subjects: acd06 (control), acd11 (vglut2_inh), acd14 (vgat_inh)
+# join_trial_num_solution_stim <- data_trial_summary %>%
+#   select(blockname, solution, stim_id, trial_num) %>%
+#   unique() %>%
+#   group_by(blockname, solution, stim_id) %>%
+#   mutate(trial_num_solution_stim = row_number())
+#
+# data_plt_raster <- data_trial %>%
+#   mutate(lick_number = row_number()) %>%
+#   left_join(join_trial_num_solution_stim) %>%
+#   mutate(solution = str_c(solution, stim_id)) %>%
+#   filter(blockname %in% c('2024_05_29_acd06', '2024_05_29_acd11', '2024_05_29_acd14')) %>%
+#   mutate(group_combined = case_when(
+#     blockname == '2024_05_29_acd06' ~ 'control',
+#     blockname == '2024_05_29_acd11' ~ 'vglut_inh',
+#     blockname == '2024_05_29_acd14' ~ 'vgat_inh'
+#   ))
+#
+# data_plt_raster %>%
+#   write_csv('./data/fig04_sfig05/fig04c_licking_raster_rep.csv')
+#
+# # ── binned lick rate: all subjects [fig04c] ───────────────────────────────
+# data_plt_binned <- data_trial_binned %>%
+#   mutate(binned_lick_rate = count_binned / (time_bin_width / 1000),
+#          time_bin = time_bin / 1000) %>%
+#   left_join(log_npm %>% select(blockname, subject) %>% unique()) %>%
+#   left_join(log_subject %>% select(subject, line, group)) %>%
+#   format_group_combined() %>%
+#   select(blockname, subject, group_combined, solution, stim_id, time_bin, binned_lick_rate)
+#
+# data_plt_binned %>%
+#   write_csv('./data/fig04_sfig05/fig04c_binned_lick_subject.csv')
+```
+
+## FP preprocessing — light artifact and baseline subtraction (panels E–H and sfig05 a–e)
+```{r eval=FALSE}
+# ── PREPROCESSING NOTE ────────────────────────────────────────────────────────
+# The block below documents how fig04_peth_subjects.csv and sfig05a_peth_rep.csv
+# were produced. Requires npm processed FP (network) and Google Sheets credentials.
+#
+# Source files:
+#   npm processed FP:  str_c(dir_npm, 'data_processed/')
+#   log_placements:    Google Sheet (url_sheet_placements, sheet = 'placements', experiment == 'acd')
+#   QC metrics:        ./data/sessions/quality_metrics.csv
+#
+# Source Rmd:
+#   str_c(dir_exp_abo, 'abo_analysis_opto_multispout_v02.Rmd')
+#   ## final: consumption effect - distant baseline [fig04e-f]   (line ~2048)
+#   #### placements [fig04g-h]                                    (line ~2208)
+#   ### depiction of baseline subtraction [sfig05a]              (line ~1514)
+#   ## final: inhibtion baseline effect [sfig05b]                (line ~1898)
+#   ## final: consumption effect - proximal baseline [sfig05d-e] (line ~2312)
+#
+# ── Baseline subtraction — two steps ──────────────────────────────────────────
+# Step 1a (blsubdist — "distant" pre-laser baseline):
+#   Window: time_rel -9 to -6 s. Per-trial mean subtracted from all timepoints.
+#   Then subract_artifact_continuouslaser(window_bl=c(-5.9,-5.8), window_artifact=c(-5.9,9))
+#   removes the artifact shape within the continuous laser window.
+#   → delta_signal_poly_zscore_blsubdist
+#
+# Step 2 (blsub — "proximal" pre-access baseline):
+#   Window: time_rel -3 to 0 s. Per-trial mean of blsubdist subtracted.
+#   → delta_signal_poly_zscore_blsub
+#
+# fig04e–f and sfig05b use blsubdist (distant baseline).
+# sfig05d–e use blsub (proximal baseline).
+# sfig05a shows all three variants (no bl / blsubdist / blsub) for subject acd09, DLS, control.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# # ── local artifact removal function ───────────────────────────────────────
+# subract_artifact_continuouslaser <- function(df, window_bl, window_artifact, var_grouping){
+#   df %>%
+#     filter(time_rel >= window_bl[1], time_rel <= window_bl[2]) %>%
+#     group_by(across(all_of(var_grouping))) %>%
+#     summarise(
+#       zscore_bldist  = delta_signal_poly_zscore_blsubdist %>% mean(),
+#       control_bldist = delta_control_poly_zscore_blsubdist %>% mean(),
+#       lls_bldist     = delta_signal_fitted_control_zscore_blsubdist %>% mean(),
+#       .groups = 'drop'
+#     ) %>%
+#     left_join(df) %>%
+#     mutate(
+#       delta_signal_poly_zscore_blsubdist = ifelse(
+#         time_rel >= window_artifact[1] & time_rel <= window_artifact[2],
+#         delta_signal_poly_zscore_blsubdist - zscore_bldist,
+#         delta_signal_poly_zscore_blsubdist),
+#       delta_control_poly_zscore_blsubdist = ifelse(
+#         time_rel >= window_artifact[1] & time_rel <= window_artifact[2],
+#         delta_control_poly_zscore_blsubdist - control_bldist,
+#         delta_control_poly_zscore_blsubdist),
+#       delta_signal_fitted_control_zscore_blsubdist = ifelse(
+#         time_rel >= window_artifact[1] & time_rel <= window_artifact[2],
+#         delta_signal_fitted_control_zscore_blsubdist - lls_bldist,
+#         delta_signal_fitted_control_zscore_blsubdist)
+#     ) %>%
+#     select(-zscore_bldist, -control_bldist, -lls_bldist)
+# }
+#
+# # ── session identification ─────────────────────────────────────────────────
+# import_fns <- log_npm %>%
+#   filter(experiment %in% c('acd')) %>%
+#   filter(procedure == 'water_nacl_opto') %>%
+#   filter(exclude == 0) %>%
+#   pull(blockname) %>% unique()
+#
+# log_opto_stim_ids <- suppressWarnings(
+#   read_sheet(url_sheet_npm_multi,
+#              sheet = 'opto_stimulation_ids', na = c('NA', ''))
+# ) %>%
+#   select(-today) %>%
+#   filter(experiment == 'acd')
+#
+# trial_stim_ids <- return_trial_ids(dir_arduino_extraction, import_fns, 'csv', filt_last = 0) %>%
+#   left_join(log_data_multi %>% select(blockname, experiment, date, subject)) %>%
+#   left_join(log_opto_stim_ids %>%
+#               select(experiment, date, subject, trial_stim_id, stim_power_uw, pulse_frequency, delay, region, id))
+#
+# # ── import raw FP streams ─────────────────────────────────────────────────
+# dir_npm_processed <- str_c(dir_npm, 'data_processed/')
+#
+# data_list <- combined_import(import_directory = dir_npm_processed,
+#                              filter_strings = import_fns,
+#                              prefixes = NA,
+#                              suffixes = c('streams_peth.feather', 'events.feather'),
+#                              verbose = 0)
+# events       <- data_list[[2]]
+# streams_peth <- data_list[[1]] %>% filter(signal_wavelength == 470)
+# streams_peth <- streams_peth %>% mutate(subject = blockname %>% str_sub(12, 16))
+#
+# # ── Step 1a: distant pre-laser baseline subtraction ────────────────────────
+# streams_peth <- streams_peth %>%
+#   filter(time_rel > -9, time_rel < -6) %>%
+#   group_by(blockname, event_id_char, branch_id, signal_wavelength, event_number) %>%
+#   summarise(
+#     zscore_bl    = mean(delta_signal_poly_zscore),
+#     control_bl   = mean(delta_control_poly_zscore),
+#     zscorells_bl = mean(delta_signal_fitted_control_zscore)
+#   ) %>%
+#   left_join(streams_peth, .) %>%
+#   mutate(
+#     delta_signal_poly_zscore_blsubdist           = delta_signal_poly_zscore - zscore_bl,
+#     delta_control_poly_zscore_blsubdist          = delta_control_poly_zscore - control_bl,
+#     delta_signal_fitted_control_zscore_blsubdist = delta_signal_fitted_control_zscore - zscorells_bl
+#   ) %>%
+#   select(-zscore_bl, -control_bl, -zscorells_bl)
+#
+# # ── Step 1b: artifact shape removal (continuous laser window) ──────────────
+# streams_peth <- streams_peth %>%
+#   subract_artifact_continuouslaser(
+#     window_bl       = c(-5.9, -5.8),
+#     window_artifact = c(-5.9, 9),
+#     var_grouping    = c('blockname', 'event_id_char', 'signal_wavelength', 'branch_id', 'event_number'))
+#
+# # ── Step 2: proximal pre-access baseline subtraction ──────────────────────
+# streams_peth <- streams_peth %>%
+#   filter(time_rel > -3, time_rel < 0) %>%
+#   group_by(blockname, event_id_char, branch_id, signal_wavelength, event_number) %>%
+#   summarise(
+#     zscore_bl    = mean(delta_signal_poly_zscore_blsubdist),
+#     control_bl   = mean(delta_control_poly_zscore_blsubdist),
+#     zscorells_bl = mean(delta_signal_fitted_control_zscore_blsubdist)
+#   ) %>%
+#   left_join(streams_peth, .) %>%
+#   mutate(
+#     delta_signal_poly_zscore_blsub           = delta_signal_poly_zscore_blsubdist - zscore_bl,
+#     delta_control_poly_zscore_blsub          = delta_control_poly_zscore_blsubdist - control_bl,
+#     delta_signal_fitted_control_zscore_blsub = delta_signal_fitted_control_zscore_blsubdist - zscorells_bl
+#   ) %>%
+#   select(-zscore_bl, -control_bl, -zscorells_bl)
+#
+# # ── join trial behavioral data ─────────────────────────────────────────────
+# join_trial_summary_behavior <- trial_summary_behavior %>%
+#   filter(blockname %in% import_fns) %>%
+#   select(blockname, line, group, trial_num, lick_count, lick_ts_last, solution, stim_id)
+#
+# streams_peth_solution <- streams_peth %>%
+#   rename(trial_num = event_number) %>%
+#   left_join(join_trial_summary_behavior) %>%
+#   filter(!is.na(solution))
+#
+# join_event_number_solution <- streams_peth_solution %>%
+#   select(blockname, solution, trial_num) %>%
+#   unique() %>%
+#   arrange(blockname, trial_num) %>%
+#   group_by(blockname, solution) %>%
+#   mutate(event_number_solution = row_number())
+#
+# streams_peth_solution <- streams_peth_solution %>%
+#   left_join(join_event_number_solution)
+#
+# # ── filter: placements and signal quality ─────────────────────────────────
+# log_placements_abo <- read_sheet(
+#   url_sheet_placements,
+#   na = c('NA',''), sheet = 'placements') %>%
+#   filter(experiment == 'acd')
+#
+# fibers_to_remove <- log_placements_abo %>%
+#   filter(exclude_da_consumption == 1) %>%
+#   select(subject, region = target)
+#
+# streams_peth_solution <- streams_peth_solution %>%
+#   left_join(log_npm %>% select(blockname, branch_id, region)) %>%
+#   format_regions('region', key_regions) %>%
+#   anti_join(fibers_to_remove)
+#
+# fns_qc_metrics <- list.files('./data/sessions/',
+#                               pattern = 'quality_metrics.csv', recursive = TRUE, full.names = TRUE)
+# combined_qc_metrics <- bind_rows(lapply(fns_qc_metrics, read.csv)) %>%
+#   format_regions('region', key_regions)
+#
+# streams_peth_solution <- streams_peth_solution %>%
+#   left_join(combined_qc_metrics %>% select(blockname, region, exclude_poor_signal),
+#             by = c('blockname', 'region')) %>%
+#   filter(exclude_poor_signal == 0 | is.na(exclude_poor_signal)) %>%
+#   select(-exclude_poor_signal)
+#
+# # ── sfig05a: single-subject depiction (acd09, DLS, control) ───────────────
+# df_plt_sbj <- streams_peth_solution %>%
+#   filter(region == 'DLS', subject == 'acd09') %>%
+#   format_group_combined() %>%
+#   filter(group_combined == 'control') %>%
+#   group_by(subject, group_combined, region, stim_id, time_rel) %>%
+#   summarise(
+#     delta_signal_poly_zscore            = mean(delta_signal_poly_zscore),
+#     delta_signal_poly_zscore_blsubdist  = mean(delta_signal_poly_zscore_blsubdist),
+#     delta_signal_poly_zscore_blsub      = mean(delta_signal_poly_zscore_blsub)
+#   )
+#
+# df_plt_sbj %>%
+#   write_csv('./data/fig04_sfig05/sfig05a_peth_rep.csv')
+#
+# # ── subject-level average (all panels) ────────────────────────────────────
+# df <- streams_peth_solution %>%
+#   select(blockname, subject, line, group, region, solution, stim_id, time_rel,
+#          delta_signal_poly_zscore,
+#          delta_signal_poly_zscore_blsub,
+#          delta_signal_poly_zscore_blsubdist,
+#          delta_control_poly_zscore_blsub,
+#          delta_control_poly_zscore_blsubdist) %>%
+#   format_group_combined() %>%
+#   group_by(subject, group_combined, region, solution, stim_id, time_rel) %>%
+#   summarise(
+#     delta_signal_poly_zscore             = mean(delta_signal_poly_zscore),
+#     delta_signal_poly_zscore_blsub       = mean(delta_signal_poly_zscore_blsub),
+#     delta_signal_poly_zscore_blsubdist   = mean(delta_signal_poly_zscore_blsubdist),
+#     delta_control_poly_zscore_blsub      = mean(delta_control_poly_zscore_blsub),
+#     delta_control_poly_zscore_blsubdist  = mean(delta_control_poly_zscore_blsubdist)
+#   )
+#
+# df %>%
+#   write_csv('./data/fig04_sfig05/fig04_peth_subjects.csv')
+```
+
+---
+
+# data import
+```{r eval=FALSE}
+# FP subject-level data — used for fig04e–h and all sfig05 FP panels
+# stim_id values: 'lha' / 'no_stim' (raw); solution: 'water' / 'nacl100' (raw)
+df <- read.csv(str_c(dir_data, 'fig04_peth_subjects.csv')) %>%
+  mutate(region = factor(region, levels = key_regions$region_label %>% unique()))
+
+# Licking trial-level data — used for fig04d
+# stim_id values: 'No stim' / 'Stim' (formatted); solution: 'Water' / '1M NaCl' (formatted)
+plt_data_licking_trial <- read.csv(str_c(dir_data, 'fig04_licking_trial.csv'))
+```
+
+---
+
+# fig04
+
+## fig04b: lick raster — representative subjects
+```{r eval=FALSE}
+dir_output_b <- str_c(dir_output, 'b/')
+fn_stem_b    <- 'time_vs_trialsorted_raster'
+
+# solution column combined with stim_id before raster (as in source preprocessing)
+data_plt_raster <- read.csv(str_c(dir_data, 'fig04b_licking_raster_rep.csv')) %>%
+  mutate(solution = str_c(solution, stim_id))
+
+plt_raster(
+  df              = data_plt_raster,
+  x               = 'event_ts_rel',
+  y               = 'trial_num_solution_stim',
+  id              = 'subject',
+  facet_x         = 'group_combined',
+  facet_y         = 'solution',
+  xlab            = 'Time (ms)',
+  ylab            = 'Trial Number',
+  plt_y_lims      = c(0, 40),
+  plt_x_lims      = c(0, 3000),
+  plt_dims        = c(2, 1.5),
+  var_color       = 'stim_id',
+  plt_scale_color = 'mako'
+) +
+  scale_color_manual(values = c('black', '#00B0F0'))
+
+save_pdf(dir_output_b, str_c(fn_stem_b, '.pdf'), 8, 8)
+data_plt_raster %>% write_csv(str_c(dir_output_b, fn_stem_b, '_data.csv'))
+```
+
+---
+
+## fig04c: binned lick rate trace
+```{r eval=FALSE}
+dir_output_c <- str_c(dir_output, 'c/')
+fn_stem_c    <- 'time_vs_binnedlickrate'
+
+# stim_id values: 'No Stim' / 'Stim' (capital S on both)
+data_plt_binned <- read.csv(str_c(dir_data, 'fig04c_binned_lick_subject.csv')) %>%
+  mutate(stim_id = factor(stim_id, levels = c('No Stim', 'Stim')))
+
+plt <- data_plt_binned %>%
+  ggplot(aes(time_bin, binned_lick_rate, color = stim_id, fill = stim_id)) +
+  stat_summary(fun.data = 'mean_se', geom = 'ribbon', aes(group = stim_id),
+               alpha = 1/3, color = NA) +
+  stat_summary(fun = 'mean', geom = 'line', aes(group = stim_id)) +
+  scale_color_manual(values = c('black', '#00B0F0')) +
+  scale_fill_manual(values  = c('black', '#00B0F0')) +
+  scale_y_continuous(breaks = c(0, 2)) +
+  scale_x_continuous(breaks = c(0, 1)) +
+  theme_ag01() +
+  facet_grid(solution ~ group_combined) +
+  force_panelsizes(rows = unit(3, 'cm'), cols = unit(2, 'cm')) +
+  xlab('Time (s)') +
+  ylab('Lick Rate (Hz)')
+
+plt %>%
+  add_scale_bar(origin = c(0, 0), x_len = 1, y_len = 2)
+
+save_pdf(dir_output_c, str_c(fn_stem_c, '.pdf'), 8, 8)
+data_plt_binned %>% write_csv(str_c(dir_output_c, fn_stem_c, '_data.csv'))
+```
+
+---
+
+## fig04d: mean trial lick count (stim vs no stim)
+```{r eval=FALSE}
+dir_output_d <- str_c(dir_output, 'd/')
+fn_stem_d    <- 'stim_vs_lickcount_line'
+
+# aggregate to session level: mean lick count per subject × solution × stim_id
+plt_data_d <- plt_data_licking_trial %>%
+  mutate(stim_id = factor(stim_id, levels = c('No stim', 'Stim'))) %>%
+  group_by(group_combined, subject, solution, stim_id) %>%
+  summarise(lick_count = mean(lick_count, na.rm = TRUE), .groups = 'drop')
+
+plt_data_d %>%
+  select(group_combined, subject) %>%
+  unique() %>%
+  group_by(group_combined) %>%
+  summarise(subject_count = n())
+
+plt_data_d %>%
+  ggplot(aes(stim_id, lick_count, color = solution)) +
+  annotate('rect', xmin = 1.75, xmax = 2.25, ymin = -Inf, ymax = Inf,
+           alpha = 1/3, fill = 'lightblue') +
+  geom_line(aes(group = interaction(subject, solution)), alpha = 1/3) +
+  stat_summary(fun = 'mean', geom = 'line', aes(group = solution)) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = solution), width = 0.1) +
+  facet_grid(. ~ group_combined) +
+  theme_ag01() +
+  theme(strip.text = element_text(margin = margin(b = 10))) +
+  coord_cartesian(xlim = c(0.5, 2.5), ylim = c(0, 25), expand = FALSE) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  scale_color_manual(values = c('red', 'black')) +
+  force_panelsizes(rows = unit(plt_dims[1], 'cm'), cols = unit(plt_dims[2] / 3, 'cm')) +
+  xlab('') +
+  ylab('Mean trial lick count')
+
+save_pdf(dir_output_d, str_c(fn_stem_d, '.pdf'), 8, 8)
+plt_data_d %>% write_csv(str_c(dir_output_d, fn_stem_d, '_data.csv'))
+```
+
+```{r eval=FALSE}
+# stats: 3-way RM ANOVA (group_combined × solution × stim_id)
+stats_list_d <- plt_data_d %>%
+  aov_rm_one_between_two_within(dir_output_d, fn_stem_d,
+                                'subject', 'lick_count',
+                                'group_combined', 'solution', 'stim_id')
+
+# post-hoc: within-solution, within-group stim comparisons
+stats_list_d[[3]] %>%
+  filter(
+    contrast1_within1 == contrast2_within1,
+    contrast1_between == contrast2_between
+  ) %>%
+  select(starts_with('contrast'), sig_symbol)
+```
+
+---
+
+## fig04e: FP trace — stim vs no-stim difference (distant baseline, −9 to 12 s)
+```{r eval=FALSE}
+dir_output_e <- str_c(dir_output, 'e/')
+fn_stem_e    <- 'inh_access_prelaserbl_trace'
+
+plt_data_e <- df %>%
+  filter(time_rel >= -9, time_rel <= 12) %>%
+  select(group_combined, subject, region, solution, stim_id, time_rel,
+         zscore = delta_signal_poly_zscore_blsubdist) %>%
+  format_vars() %>%
+  spread(stim_id, zscore) %>%
+  mutate(diff = Stim - `No stim`) %>%
+  group_by(group_combined, region, solution, time_rel) %>%
+  summarise(
+    diff_sem = sd(diff, na.rm = TRUE) / sqrt(sum(!is.na(diff))),
+    diff     = mean(diff, na.rm = TRUE),
+    .groups  = 'drop'
+  )
+
+plt <- plt_data_e %>%
+  ggplot(aes(time_rel, diff, color = region, fill = region)) +
+  annotate('rect', xmin = -6, xmax = 9, ymin = -Inf, ymax = Inf,
+           alpha = 1/8, fill = '#2baee4') +
+  annotate('rect', xmin = 0,  xmax = 3, ymin = -Inf, ymax = Inf,
+           alpha = 1/3, fill = 'darkgrey') +
+  geom_hline(yintercept = 0, color = 'darkgrey', size = 0.5) +
+  geom_ribbon(aes(ymax = diff + diff_sem, ymin = diff - diff_sem),
+              color = NA, alpha = 1/3) +
+  geom_line() +
+  facet_grid(solution ~ group_combined) +
+  theme_ag01() +
+  scale_color_manual(values = color_values_regions_da) +
+  scale_fill_manual(values  = color_values_regions_da)
+
+plt <- plt %>%
+  add_scale_bar(origin = c(-9, -1), x_len = 1, y_len = 1)
+
+plt +
+  force_panelsizes(cols = unit(4.3, 'cm'), rows = unit(2.5955, 'cm'))
+
+save_pdf(dir_output_e, str_c(fn_stem_e, '.pdf'), 8, 4)
+plt_data_e %>% write_csv(str_c(dir_output_e, fn_stem_e, '_data.csv'))
+```
+
+---
+
+## fig04f: FP summary bar — region vs stim/no-stim difference (0–2 s, distant baseline)
+```{r eval=FALSE}
+dir_output_f <- str_c(dir_output, 'f/')
+fn_stem_f    <- 'inh_access_prelaserbl_region_vs_difference'
+
+plt_data_f_summary <- df %>%
+  filter(time_rel > 0, time_rel < 2) %>%
+  group_by(subject, region, stim_id, group_combined, solution) %>%
+  summarise(zscore = mean(delta_signal_poly_zscore_blsubdist, na.rm = TRUE), .groups = 'drop')
+
+plt_data_f_delta <- plt_data_f_summary %>%
+  format_vars() %>%
+  spread(stim_id, zscore) %>%
+  mutate(diff = Stim - `No stim`)
+
+plt_data_f_summary %>%
+  select(group_combined, region, subject) %>%
+  unique() %>%
+  group_by(group_combined, region) %>%
+  summarise(count_fibers = n()) %>%
+  spread(group_combined, count_fibers)
+
+plt_data_f_delta %>%
+  ggplot(aes(region, diff, color = group_combined, fill = group_combined)) +
+  geom_hline(yintercept = 0, alpha = 1/3) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = group_combined),
+               width = 0.3, position = position_dodge(width = 0.75)) +
+  stat_summary(fun = 'mean', geom = 'bar', color = NA, aes(group = group_combined),
+               alpha = 1/2, width = 0.6, position = position_dodge(width = 0.75)) +
+  geom_jitter(shape = 21, color = 'white', size = 1.5, stroke = 0.25,
+              position = position_jitterdodge(jitter.width = 0.04, dodge.width = 0.75)) +
+  theme_ag01() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  scale_color_manual(values = color_group_combined) +
+  scale_fill_manual(values  = color_group_combined) +
+  coord_cartesian(xlim = c(0.5, 6.5), ylim = c(-2, 2), expand = FALSE) +
+  facet_grid(solution ~ .) +
+  force_panelsizes(cols = unit(plt_dims[1] * 1.25, 'cm'), rows = unit(plt_dims[2] * 2/3, 'cm')) +
+  theme(panel.spacing.y = unit(0.8, 'lines')) +
+  ylab('Z-Score difference') +
+  xlab('')
+
+save_pdf(dir_output_f, str_c(fn_stem_f, '.pdf'), 8, 4)
+plt_data_f_delta %>% write_csv(str_c(dir_output_f, fn_stem_f, '_data.csv'))
+```
+
+```{r eval=FALSE}
+# stats: Wilcoxon unpaired per region × solution (control vs vgat_inh, control vs vglut2_inh)
+# Bonferroni: p_value × 2 (two comparisons per cell)
+loop_regions   <- plt_data_f_delta %>% pull(region)   %>% unique()
+loop_solutions <- plt_data_f_delta %>% pull(solution) %>% unique()
+
+combined_result_f <- NULL
+
+for (loop_solution in loop_solutions) {
+  for (loop_region in loop_regions) {
+    plt_data_wide <- plt_data_f_delta %>%
+      filter(solution == loop_solution) %>%
+      select(region, subject, group_combined, diff) %>%
+      spread(group_combined, diff) %>%
+      filter(region == loop_region)
+
+    loop_result <- bind_rows(
+      plt_data_wide %>%
+        tidy_wilcox_unpaired('control', 'vgat_inh') %>%
+        mutate(comparision = 'control_vs_vgat'),
+      plt_data_wide %>%
+        tidy_wilcox_unpaired('control', 'vglut2_inh') %>%
+        mutate(comparision = 'control_vs_vglut2')
+    ) %>%
+      clean_names() %>%
+      mutate(region = loop_region, solution = loop_solution) %>%
+      select(solution, region, comparision, everything()) %>%
+      mutate(p_value = p_value * 2) %>%
+      quick_sig()
+
+    combined_result_f <- bind_rows(combined_result_f, loop_result)
+  }
+}
+
+combined_result_f %>%
+  mutate(region = factor(region, levels = key_regions$region_label)) %>%
+  ggplot(aes(region, comparision, label = sig_symbol)) +
+  facet_grid(solution ~ .) +
+  geom_text()
+
+combined_result_f %>%
+  write_csv(str_c(dir_output_f, fn_stem_f, '_stats_ph.csv'))
+```
+
+---
+
+## fig04g: fiber placement maps — 3D only (per group, averaged across solutions)
+```{r eval=FALSE}
+dir_output_g <- str_c(dir_output, 'g/')
+fn_stem_g    <- 'inh_access_prelaserbl_placement_vs_deltasummary'
+
+plt_data_g_delta <- df %>%
+  filter(time_rel > 0, time_rel < 2) %>%
+  group_by(subject, region, stim_id, group_combined, solution) %>%
+  summarise(zscore = mean(delta_signal_poly_zscore_blsubdist, na.rm = TRUE), .groups = 'drop') %>%
+  spread(stim_id, zscore) %>%
+  mutate(diff = lha - no_stim)
+
+plt_data_g_mean <- plt_data_g_delta %>%
+  group_by(group_combined, subject, region) %>%
+  summarise(diff = mean(diff, na.rm = TRUE), .groups = 'drop') %>% 
+  left_join(log_placements %>% select(subject, region = target, hit_ap, hit_ml, hit_dv))
+
+for (loop_group in c('control', 'vgat_inh', 'vglut2_inh')) {
+  df_loop      <- plt_data_g_mean %>% filter(group_combined == loop_group)
+  var_color    <- 'diff'
+  color_limits <- c(-1, 1)
+
+  tryCatch(
+    plt_str_3d(
+      df           = df_loop,
+      var_color    = var_color,
+      color_limits = color_limits,
+      dir_output   = dir_output_g,
+      fn_stem      = str_c(fn_stem_g, '_', loop_group),
+      toggle_save  = 1
+    ),
+    error = function(e) message('plt_str_3d skipped (kaleido): ', conditionMessage(e))
+  )
+}
+
+plt_data_g_mean %>% write_csv(str_c(dir_output_g, fn_stem_g, '_data.csv'))
+```
+
+---
+
+## fig04h: placement × response correlation (AP / ML / DV)
+```{r eval=FALSE}
+dir_output_h <- str_c(dir_output, 'h/')
+fn_stem_h    <- 'inh_access_prelaserbl_placement_vs_deltasummary'
+
+plt_list_h <- plt_corr(
+  df            = plt_data_g_mean,
+  ylim_all      = c(-2, 2),
+  xlim_ap       = c(-3, 0, 3),
+  xlim_ml       = c(0, 2, 4),
+  xlim_dv       = c(-6, -4, -2),
+  var_dep       = 'diff',
+  var_dep_label = 'Delta',
+  plt_dims      = c(3, 3 * 2/3)
+)
+
+plt_list_h[['AP']] +
+  plt_list_h[['ML']] +
+  plt_list_h[['DV']] +
+  plot_layout(nrow = 1, widths = unit(3 * 2/3, 'cm'), heights = unit(4, 'cm'),
+              guides = 'collect')
+
+save_pdf(dir_output_h, str_c(fn_stem_h, '_corr.pdf'), 6, 3.5)
+plt_list_h[['stats_output']] %>%
+  write_csv(str_c(dir_output_h, fn_stem_h, '_corr_stats.csv'))
+```
+
+---
+
+# sfig05
+
+## sfig05a: baseline subtraction depiction — 3 panels (acd09, DLS, control)
+```{r eval=FALSE}
+dir_output_sfig05a <- str_c(dir_output, 'sfig05a/')
+
+# stim_id values: 'lha' / 'no_stim' (raw); lha = '#2baee4', no_stim = 'black'
+df_plt_sbj <- read.csv(str_c(dir_data, 'sfig05a_peth_rep.csv'))
+
+# ── panel 1: no baseline subtraction ──────────────────────────────────────────
+fn_stem_sfig05a_1 <- 'preprocessing_examplesubject_nobaseline'
+
+plt01 <- df_plt_sbj %>%
+  filter(time_rel > -9, time_rel < 12) %>%
+  ggplot(aes(time_rel, delta_signal_poly_zscore, color = stim_id)) +
+  annotate('rect', xmin = -6, xmax = 9, ymin = -Inf, ymax = Inf,
+           alpha = 1/8, fill = '#2baee4') +
+  annotate('rect', xmin = 0,  xmax = 3, ymin = -Inf, ymax = Inf,
+           alpha = 1/3, fill = 'darkgrey') +
+  geom_line() +
+  facet_grid(group_combined ~ subject) +
+  ggtitle('No baseline subtraction') +
+  ylab('Z-score') +
+  xlab('Time relative to access start (s)') +
+  theme_ag01() +
+  scale_color_manual(values = c('#2baee4', 'black')) +
+  force_panelsizes(rows = unit(2.5, 'cm'), cols = unit(2.5, 'cm'))
+
+plt01 %>%
+  add_scale_bar(origin = c(-9, -0.5), x_len = 1, y_len = 1)
+
+save_pdf(dir_output_sfig05a, str_c(fn_stem_sfig05a_1, '.pdf'), 4, 4)
+df_plt_sbj %>%
+  select(subject, group_combined, region, stim_id, time_rel,
+         delta_signal_poly_zscore) %>%
+  write_csv(str_c(dir_output_sfig05a, fn_stem_sfig05a_1, '_data.csv'))
+
+# ── panel 2: pre-laser baseline subtraction (blsubdist) ───────────────────────
+fn_stem_sfig05a_2 <- 'preprocessing_examplesubject_prelaser'
+
+plt02 <- df_plt_sbj %>%
+  filter(time_rel > -9, time_rel < 12) %>%
+  ggplot(aes(time_rel, delta_signal_poly_zscore_blsubdist, color = stim_id)) +
+  annotate('rect', xmin = -6, xmax = 9, ymin = -Inf, ymax = Inf,
+           alpha = 1/8, fill = '#2baee4') +
+  annotate('rect', xmin = 0,  xmax = 3, ymin = -Inf, ymax = Inf,
+           alpha = 1/3, fill = 'darkgrey') +
+  geom_line() +
+  facet_grid(group_combined ~ subject) +
+  ggtitle('Pre-laser baseline subtraction') +
+  ylab('Z-score') +
+  xlab('Time relative to access start (s)') +
+  theme_ag01() +
+  scale_color_manual(values = c('#2baee4', 'black')) +
+  force_panelsizes(rows = unit(2.5, 'cm'), cols = unit(2.5, 'cm'))
+
+plt02 %>%
+  add_scale_bar(origin = c(-9, -0.5), x_len = 1, y_len = 1)
+
+save_pdf(dir_output_sfig05a, str_c(fn_stem_sfig05a_2, '.pdf'), 4, 4)
+df_plt_sbj %>%
+  select(subject, group_combined, region, stim_id, time_rel,
+         delta_signal_poly_zscore_blsubdist) %>%
+  write_csv(str_c(dir_output_sfig05a, fn_stem_sfig05a_2, '_data.csv'))
+
+# ── panel 3: pre-access baseline subtraction (blsub) ─────────────────────────
+fn_stem_sfig05a_3 <- 'preprocessing_examplesubject_preaccess'
+
+plt03 <- df_plt_sbj %>%
+  filter(time_rel > -9, time_rel < 12) %>%
+  ggplot(aes(time_rel, delta_signal_poly_zscore_blsub, color = stim_id)) +
+  annotate('rect', xmin = -6, xmax = 9, ymin = -Inf, ymax = Inf,
+           alpha = 1/8, fill = '#2baee4') +
+  annotate('rect', xmin = 0,  xmax = 3, ymin = -Inf, ymax = Inf,
+           alpha = 1/3, fill = 'darkgrey') +
+  geom_line() +
+  facet_grid(group_combined ~ subject) +
+  ggtitle('Pre-access baseline subtraction') +
+  ylab('Z-score') +
+  xlab('Time relative to access start (s)') +
+  theme_ag01() +
+  scale_color_manual(values = c('#2baee4', 'black')) +
+  force_panelsizes(rows = unit(2.5, 'cm'), cols = unit(2.5, 'cm'))
+
+plt03 %>%
+  add_scale_bar(origin = c(-9, -0.5), x_len = 1, y_len = 1)
+
+save_pdf(dir_output_sfig05a, str_c(fn_stem_sfig05a_3, '.pdf'), 4, 4)
+df_plt_sbj %>%
+  select(subject, group_combined, region, stim_id, time_rel,
+         delta_signal_poly_zscore_blsub) %>%
+  write_csv(str_c(dir_output_sfig05a, fn_stem_sfig05a_3, '_data.csv'))
+```
+
+---
+
+## sfig05b: inhibition baseline effect — group mean trace (−9 to 0 s, distant baseline)
+```{r eval=FALSE}
+dir_output_sfig05b <- str_c(dir_output, 'sfig05b/')
+fn_stem_sfig05b  <- 'inh_baseline_prelaserbl_trace'
+
+plt_data_sfig05b <- df %>%
+  filter(time_rel >= -9, time_rel <= 0) %>%
+  select(group_combined, subject, region, solution, stim_id, time_rel,
+         zscore = delta_signal_poly_zscore_blsubdist) %>%
+  spread(stim_id, zscore) %>%
+  mutate(diff = lha - no_stim) %>%
+  group_by(group_combined, region, solution, time_rel) %>%
+  summarise(
+    diff_sem = sd(diff, na.rm = TRUE) / sqrt(sum(!is.na(diff))),
+    diff     = mean(diff, na.rm = TRUE),
+    .groups  = 'drop'
+  ) %>%
+  mutate(solution = case_when(
+    solution == 'nacl100' ~ '1M NaCl',
+    solution == 'water'   ~ 'Water',
+    TRUE                  ~ solution
+  ))
+
+plt <- plt_data_sfig05b %>%
+  ggplot(aes(time_rel, diff, color = region, fill = region)) +
+  annotate('rect', xmin = -6, xmax = 0, ymin = -Inf, ymax = Inf,
+           alpha = 1/8, fill = '#2baee4') +
+  geom_hline(yintercept = 0, color = 'darkgrey', size = 0.5) +
+  geom_ribbon(aes(ymax = diff + diff_sem, ymin = diff - diff_sem),
+              color = NA, alpha = 1/3) +
+  geom_line() +
+  facet_grid(solution ~ group_combined) +
+  theme_ag01() +
+  scale_color_manual(values = color_values_regions_da) +
+  scale_fill_manual(values  = color_values_regions_da)
+
+plt <- plt %>%
+  add_scale_bar(origin = c(-9, -1), x_len = 1, y_len = 1)
+
+plt +
+  force_panelsizes(cols = unit(4.3553, 'cm'), rows = unit(2.5955, 'cm'))
+
+save_pdf(dir_output_sfig05b, str_c(fn_stem_sfig05b, '.pdf'), 8, 4)
+plt_data_sfig05b %>% write_csv(str_c(dir_output_sfig05b, fn_stem_sfig05b, '_data.csv'))
+```
+
+---
+
+## sfig05c: inhibition baseline effect — summary bar (−5 to 0 s, distant baseline)
+```{r eval=FALSE}
+dir_output_sfig05c <- str_c(dir_output, 'sfig05c/')
+fn_stem_sfig05c    <- 'inh_baseline_region_vs_difference'
+
+# no solution grouping — averaged across solutions
+plt_data_sfig05c <- df %>%
+  filter(time_rel > -5, time_rel < 0) %>%
+  group_by(subject, region, stim_id, group_combined) %>%
+  summarise(zscore = mean(delta_signal_poly_zscore_blsubdist, na.rm = TRUE), .groups = 'drop') %>%
+  spread(stim_id, zscore) %>%
+  mutate(diff = lha - no_stim)
+
+plt_data_sfig05c %>%
+  ggplot(aes(region, diff, color = group_combined, fill = group_combined)) +
+  geom_hline(yintercept = 0, alpha = 1/3) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = group_combined),
+               width = 0.3, position = position_dodge(width = 0.75)) +
+  stat_summary(fun = 'mean', geom = 'bar', color = NA, aes(group = group_combined),
+               alpha = 1/2, width = 0.6, position = position_dodge(width = 0.75)) +
+  geom_jitter(shape = 21, color = 'white', size = 1.5, stroke = 0.25,
+              position = position_jitterdodge(jitter.width = 0.04, dodge.width = 0.75)) +
+  theme_ag01() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  scale_color_manual(values = color_group_combined) +
+  scale_fill_manual(values  = color_group_combined) +
+  coord_cartesian(xlim = c(0.5, 6.5), ylim = c(-2, 1.5), expand = F) +
+  scale_y_continuous(breaks = seq(-2, 1.5, 0.5)) +
+  force_panelsizes(cols = unit(plt_dims[1] * 1.25, 'cm'), rows = unit(4.1758, 'cm')) +
+  ylab('Z-Score difference') +
+  xlab('')
+
+save_pdf(dir_output_sfig05c, str_c(fn_stem_sfig05c, '.pdf'), 4, 4)
+plt_data_sfig05c %>% write_csv(str_c(dir_output_sfig05c, fn_stem_sfig05c, '_data.csv'))
+```
+
+```{r eval=FALSE}
+# stats: Wilcoxon unpaired per region (no solution split; control vs vgat_inh, control vs vglut2_inh)
+loop_regions <- plt_data_sfig05c %>% pull(region) %>% unique()
+
+combined_result_sfig05c <- NULL
+
+for (loop_region in loop_regions) {
+  plt_data_wide <- plt_data_sfig05c %>%
+    select(region, subject, group_combined, diff) %>%
+    spread(group_combined, diff) %>%
+    filter(region == loop_region)
+
+  loop_result <- bind_rows(
+    plt_data_wide %>%
+      tidy_wilcox_unpaired('control', 'vgat_inh') %>%
+      mutate(comparision = 'control_vs_vgat'),
+    plt_data_wide %>%
+      tidy_wilcox_unpaired('control', 'vglut2_inh') %>%
+      mutate(comparision = 'control_vs_vglut2')
+  ) %>%
+    clean_names() %>%
+    mutate(region = loop_region) %>%
+    select(region, comparision, everything()) %>%
+    mutate(p_value = p_value * 2) %>%
+    quick_sig()
+
+  combined_result_sfig05c <- bind_rows(combined_result_sfig05c, loop_result)
+}
+
+combined_result_sfig05c %>%
+  mutate(region = factor(region, levels = key_regions$region_label)) %>%
+  ggplot(aes(region, comparision, label = sig_symbol)) +
+  geom_text()
+
+combined_result_sfig05c %>%
+  write_csv(str_c(dir_output_sfig05c, fn_stem_sfig05c, '_stats_ph.csv'))
+```
+
+---
+
+## sfig05d: FP trace — consumption effect, proximal baseline (−3 to 6 s)
+```{r eval=FALSE}
+dir_output_sfig05d <- str_c(dir_output, 'sfig05d/')
+fn_stem_sfig05d    <- 'inh_access_preaccessbl_trace'
+
+plt_data_sfig05d <- df %>%
+  filter(time_rel >= -3, time_rel <= 6) %>%
+  select(group_combined, subject, region, solution, stim_id, time_rel,
+         zscore = delta_signal_poly_zscore_blsub) %>%
+  spread(stim_id, zscore) %>%
+  mutate(diff = lha - no_stim) %>%
+  group_by(group_combined, region, solution, time_rel) %>%
+  summarise(
+    diff_sem = sd(diff, na.rm = TRUE) / sqrt(sum(!is.na(diff))),
+    diff     = mean(diff, na.rm = TRUE),
+    .groups  = 'drop'
+  ) %>%
+  mutate(solution = case_when(
+    solution == 'nacl100' ~ '1M NaCl',
+    solution == 'water'   ~ 'Water',
+    TRUE                  ~ solution
+  ))
+
+plt <- plt_data_sfig05d %>%
+  ggplot(aes(time_rel, diff, color = region, fill = region)) +
+  annotate('rect', xmin = -3, xmax = 6, ymin = -Inf, ymax = Inf,
+           alpha = 1/8, fill = '#2baee4') +
+  annotate('rect', xmin = 0,  xmax = 3, ymin = -Inf, ymax = Inf,
+           alpha = 1/3, fill = 'darkgrey') +
+  geom_hline(yintercept = 0, color = 'darkgrey', size = 0.5) +
+  geom_ribbon(aes(ymax = diff + diff_sem, ymin = diff - diff_sem),
+              color = NA, alpha = 1/3) +
+  geom_line() +
+  facet_grid(solution ~ group_combined) +
+  theme_ag01() +
+  scale_color_manual(values = color_values_regions_da) +
+  scale_fill_manual(values  = color_values_regions_da)
+
+plt <- plt %>%
+  add_scale_bar(origin = c(-3, -1), x_len = 1, y_len = 1)
+
+plt +
+  force_panelsizes(cols = unit(4.3553, 'cm'), rows = unit(2.5955, 'cm'))
+
+save_pdf(dir_output_sfig05d, str_c(fn_stem_sfig05d, '.pdf'), 8, 4)
+plt_data_sfig05d %>% write_csv(str_c(dir_output_sfig05d, fn_stem_sfig05d, '_data.csv'))
+```
+
+---
+
+## sfig05e: FP summary bar — consumption effect, proximal baseline (0–2 s)
+```{r eval=FALSE}
+dir_output_sfig05e <- str_c(dir_output, 'sfig05e/')
+fn_stem_sfig05e    <- 'inh_access_preaccessbl_region_vs_difference'
+
+plt_data_sfig05e_summary <- df %>%
+  filter(time_rel > 0, time_rel < 2) %>%
+  group_by(subject, region, stim_id, group_combined, solution) %>%
+  summarise(zscore = mean(delta_signal_poly_zscore_blsub, na.rm = TRUE), .groups = 'drop')
+
+plt_data_sfig05e <- plt_data_sfig05e_summary %>%
+  spread(stim_id, zscore) %>%
+  mutate(diff = lha - no_stim) %>%
+  mutate(solution = case_when(
+    solution == 'nacl100' ~ '1M NaCl',
+    solution == 'water'   ~ 'Water',
+    TRUE                  ~ solution
+  ))
+
+plt <- plt_data_sfig05e %>%
+  ggplot(aes(region, diff, color = group_combined, fill = group_combined)) +
+  geom_hline(yintercept = 0, alpha = 1/3) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = group_combined),
+               width = 0.3, position = position_dodge(width = 0.75)) +
+  stat_summary(fun = 'mean', geom = 'bar', color = NA, aes(group = group_combined),
+               alpha = 1/2, width = 0.6, position = position_dodge(width = 0.75)) +
+  theme_ag01() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  scale_color_manual(values = color_group_combined) +
+  scale_fill_manual(values  = color_group_combined) +
+  facet_grid(solution ~ .) +
+  force_panelsizes(cols = unit(plt_dims[1] * 1.25, 'cm'), rows = unit(plt_dims[2] * 2/3, 'cm')) +
+  theme(panel.spacing.y = unit(0.8, 'lines')) +
+  ylab('Z-Score difference') +
+  xlab('')
+
+plt +
+  geom_jitter(shape = 21, color = 'white', size = 1.5, stroke = 0.25,
+              position = position_jitterdodge(jitter.width = 0.04, dodge.width = 0.75)) +
+  coord_cartesian(xlim = c(0.5, 6.5), ylim = c(-1.5, 1), expand = F)
+
+save_pdf(dir_output_sfig05e, str_c(fn_stem_sfig05e, '.pdf'), 4, 4)
+plt_data_sfig05e %>% write_csv(str_c(dir_output_sfig05e, fn_stem_sfig05e, '_data.csv'))
+```
+
+```{r eval=FALSE}
+# stats: Wilcoxon unpaired per region × solution (control vs vgat_inh, control vs vglut2_inh)
+loop_regions   <- plt_data_sfig05e %>% pull(region)   %>% unique()
+loop_solutions <- plt_data_sfig05e %>% pull(solution) %>% unique()
+
+combined_result_sfig05e <- NULL
+
+for (loop_solution in loop_solutions) {
+  for (loop_region in loop_regions) {
+    plt_data_wide <- plt_data_sfig05e %>%
+      filter(solution == loop_solution) %>%
+      select(region, subject, group_combined, diff) %>%
+      spread(group_combined, diff) %>%
+      filter(region == loop_region)
+
+    loop_result <- bind_rows(
+      plt_data_wide %>%
+        tidy_wilcox_unpaired('control', 'vgat_inh') %>%
+        mutate(comparision = 'control_vs_vgat'),
+      plt_data_wide %>%
+        tidy_wilcox_unpaired('control', 'vglut2_inh') %>%
+        mutate(comparision = 'control_vs_vglut2')
+    ) %>%
+      clean_names() %>%
+      mutate(region = loop_region, solution = loop_solution) %>%
+      select(solution, region, comparision, everything()) %>%
+      mutate(p_value = p_value * 2) %>%
+      quick_sig()
+
+    combined_result_sfig05e <- bind_rows(combined_result_sfig05e, loop_result)
+  }
+}
+
+combined_result_sfig05e %>%
+  mutate(region = factor(region, levels = key_regions$region_label)) %>%
+  ggplot(aes(region, comparision, label = sig_symbol)) +
+  facet_grid(solution ~ .) +
+  geom_text()
+
+combined_result_sfig05e %>%
+  write_csv(str_c(dir_output_sfig05e, fn_stem_sfig05e, '_stats_ph.csv'))
+```

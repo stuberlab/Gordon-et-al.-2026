@@ -1,0 +1,1164 @@
+---
+title: "sfig09"
+author: "adam gordon-fennell"
+date: '2026-06-11'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# run all chunks from the project root so relative paths resolve correctly
+knitr::opts_knit$set(root.dir = normalizePath('../'))
+```
+
+# setup
+## libraries
+```{r}
+source('./logs_and_keys/key_local_directories.R')
+Sys.unsetenv("RETICULATE_PYTHON_FALLBACK")
+Sys.unsetenv("RETICULATE_PYTHON")
+reticulate::use_python(path_python, required = TRUE)
+
+library(tidyverse)
+library(afex)
+library(emmeans)
+library(janitor)
+library(readxl)
+library(ggh4x)     # force_panelsizes
+library(scales)    # rescale, squish
+library(arrow)
+library(zoo)
+library(lubridate)
+library(patchwork)
+library(ggbeeswarm)
+library(ggpubr)    # stat_cor
+library(pals)
+library(boot)      # bootstrapping
+library(corrplot)
+library(Hmisc)
+library(plotly)
+library(lme4)
+library(lmerTest)
+library(viridisLite)
+
+arrow::set_cpu_count(4)
+
+
+source('./functions/theme.R')
+source('./functions/general.R')
+source('./functions/r_general.R')
+source('./functions/r_plots.R')
+source('./functions/stats.R')
+source('./functions/pca.R')
+source('./functions/analysis_peth.R')
+source('./functions/plotting_placements.R')
+source('./functions/params.R')
+```
+
+## directories
+```{r}
+dir_combined_setid   <- './data/combined_setid/'
+dir_localdata_sessions <- './data/sessions/'
+dir_output           <- './analysis_and_plots/sfig09/'
+
+dir.create(dir_output, recursive = TRUE, showWarnings = FALSE)
+```
+
+## logs / keys
+```{r}
+log_analysis_subjects <- read_xlsx('./logs_and_keys/log_data_analysis.xlsx', sheet = 'subjects',    na = c('NA', ''))
+log_analysis_fp       <- read_xlsx('./logs_and_keys/log_data_analysis.xlsx', sheet = 'fp',          na = c('NA', ''))
+log_analysis_exp      <- read_xlsx('./logs_and_keys/log_data_analysis.xlsx', sheet = 'experiments', na = c('NA', ''))
+log_placements        <- read.csv('./logs_and_keys/log_fiber_placements.csv', na.strings = c('', 'NA'))
+```
+
+---
+
+# analysis / plotting
+## setup helpers
+```{r eval=FALSE}
+# solution factor key: solution codes → display labels, colors, x-positions
+solution_factor_key <- read_csv('./functions/factor_solution.csv', show_col_types = FALSE) %>%
+  arrange(factor_level)
+
+solution_levels <- solution_factor_key$solution_label %>% unique()
+solution_colors <- solution_factor_key$color          %>% unique()
+
+# saccharine-specific solution levels / colors (used by sfig09b–d)
+sacc_solutions       <- c('water', 'sucrose05', 'sucrose10', 'sucrose20', 'sacc20')
+solution_levels_sacc <- solution_factor_key %>%
+  filter(solution %in% sacc_solutions) %>%
+  pull(solution_label) %>% unique()
+solution_colors_sacc <- solution_factor_key %>%
+  filter(solution %in% sacc_solutions) %>%
+  pull(color) %>% unique()
+
+# set_id colors: WR:Suc, FR:Suc, WR:NaCl, FR:Sacc, WR:Water, WR/Sat:Suc
+#                  1          2        3         4        5           6
+colors_setid <- c("#7edb00", "#007edb", "#db007e", "#DB7E00", "black", "#DBD700")
+
+# extended filt_and_format_data: filters regions and set_id, joins solution labels
+filt_and_format_data <- function(df) {
+  df %>%
+    mutate(region = region %>% factor(levels = unique(key_regions$region_label))) %>%
+    format_set_id(key_set_id) %>%
+    left_join(solution_factor_key %>% select(solution, solution_label), by = 'solution') %>%
+    mutate(solution_label = factor(solution_label, levels = solution_levels))
+}
+
+get_solution_rank <- function(df) {
+  df %>%
+    mutate(solution_rank = case_when(
+      solution %in% c('sucrose00', 'nacl150') ~ 1,
+      solution %in% c('sucrose05', 'nacl100') ~ 2,
+      solution %in% c('sucrose10', 'nacl050') ~ 3,
+      solution %in% c('sucrose20', 'nacl025') ~ 4,
+      solution %in% c('sucrose30', 'nacl000') ~ 5
+    ))
+}
+```
+
+---
+
+## preprocessing
+# water trace / binned licking trace: computed from raw sessions and saved to pre/
+# all other panels read pre-computed CSVs directly from data/combined_setid/
+```{r eval=FALSE}
+toggle_process <- 0  # 1 = load from sessions and save  |  0 = read saved CSVs
+
+dir_output_pre <- str_c(dir_output, 'pre/')
+dir.create(dir_output_pre, recursive = TRUE, showWarnings = FALSE)
+```
+
+
+```{r eval=FALSE}
+if (toggle_process == 1) {
+  # ── 1. build subject / session log for water sets ────────────────────────────
+  subjects_include <- log_analysis_subjects %>%
+    filter(inclusion_consumption == 1) %>%
+    pull(subject)
+
+  log_data <- log_analysis_fp %>%
+    filter(is.na(exclude) | exclude != 1) %>%
+    filter(subject %in% subjects_include) %>%
+    get_set_id() %>%
+    filter(!is.na(set_id))
+
+  subjects_wrwater <- log_data %>%
+    filter(set_id == 'wrwater') %>%
+    pull(subject) %>%
+    unique()
+
+  log_data <- log_data %>%
+    filter(subject %in% subjects_wrwater) %>%
+    filter(set_id %in% c('wrnacl', 'frsuc', 'wrsuc', 'frmultisacc', 'wrwater'))
+
+  set_ids_water <- c('frmultisacc', 'frsuc', 'wrnacl', 'wrsuc', 'wrwater')
+
+  fns_qc_metrics      <- list.files(dir_localdata_sessions, pattern = 'quality_metrics.csv', recursive = TRUE, full.names = TRUE)
+  combined_qc_metrics <- bind_rows(lapply(fns_qc_metrics, read.csv))
+
+  process_blocknames <- log_data %>% pull(blockname)
+
+  # ── 2. FP trace (water solution only, all regions) ───────────────────────────
+  df_fp_peth <- combine_session_fp(process_blocknames, dir_localdata_sessions) %>%
+    left_join(log_data %>% select(blockname, subject), by = 'blockname')
+
+  df_fp_peth <- df_fp_peth %>%
+    filter_qc_metrics(combined_qc_metrics, removal_type = 1) %>%
+    format_regions('region', key_regions) %>%
+    filter_placements('exclude_da_consumption') %>%
+    filter(trial_lick == 1) %>%
+    filter(time_rel >= -3, time_rel <= 8)
+
+  plt_data_trace <- df_fp_peth %>%
+    left_join(log_data %>% select(blockname, set_id), by = 'blockname') %>%
+    left_join(solution_factor_key %>% select(solution, solution_label), by = 'solution') %>%
+    filter(solution_label == 'Water') %>%
+    group_by(set_id, region, solution, time_rel) %>%
+    summarise(
+      zscore_blsub_sem  = sd(zscore_blsub) / sqrt(n()),
+      zscore_blsub_mean = mean(zscore_blsub),
+      .groups = 'drop'
+    ) %>%
+    format_set_id(key_set_id) %>%
+    mutate(region = region %>% factor(levels = key_regions$region_label %>% unique()))
+
+  plt_data_trace %>% write_csv(str_c(dir_output_pre, 'fp_str_water_trace_data.csv'))
+
+  # ── 3. binned licking trace (water solution only) ────────────────────────────
+  df_binnedlick <- combine_session_binnedlick(process_blocknames, dir_localdata_sessions) %>%
+    left_join(log_data %>% select(blockname, set_id, subject), by = 'blockname') %>%
+    mutate(time_rel = time_bin / 1000) %>%
+    select(-time_bin) %>%
+    mutate(lick_hz = count_binned / (100 / 1000)) %>%
+    select(-count_binned) %>%
+    filter(trial_lick == 1) %>%
+    group_by(set_id, solution, time_rel) %>%
+    summarise(
+      lick_hz_sem  = sd(lick_hz) / sqrt(n()),
+      lick_hz_mean = mean(lick_hz),
+      .groups = 'drop'
+    ) %>%
+    format_set_id(key_set_id) %>%
+    left_join(solution_factor_key %>% select(solution, solution_label), by = 'solution') %>%
+    mutate(solution_label = factor(solution_label, levels = solution_levels)) %>%
+    filter(solution_label == 'Water')
+
+  df_binnedlick %>% write_csv(str_c(dir_output_pre, 'fp_str_water_binnedlick_data.csv'))
+
+} else {
+
+  message('toggle_process = 0: preprocessing CSVs will be read by each section as needed')
+
+}
+```
+
+---
+
+## sfig09b: saccharine licking (left) + lick vs z-score correlation (right)
+```{r eval=FALSE}
+dir_output_b <- str_c(dir_output, 'b/')
+dir.create(dir_output_b, recursive = TRUE, showWarnings = FALSE)
+
+# subject-level licking summary (mean across sessions then across trials)
+df_trial_sacc <- read_csv(str_c(dir_combined_setid, 'frmultisacc_full_peth_summary_means_trial.csv'), show_col_types = FALSE) %>%
+  filt_and_format_data()
+
+df_licking_summary_sacc <- df_trial_sacc %>%
+  filter(time_bin == 'access') %>%
+  select(blockname, subject, trial_num, solution, solution_label, lick_count) %>%
+  unique() %>%
+  group_by(blockname, subject, solution, solution_label) %>%
+  summarise(lick_count = mean(lick_count), .groups = 'drop') %>%
+  group_by(subject, solution, solution_label) %>%
+  summarise(lick_count = mean(lick_count), .groups = 'drop') %>%
+  mutate(solution_label = factor(solution_label, levels = solution_levels_sacc))
+
+df_fp_summary_sacc <- read_csv(str_c(dir_combined_setid, 'frmultisacc_filtlick_peth_summary_means_subject.csv'), show_col_types = FALSE) %>%
+  filt_and_format_data() %>%
+  mutate(solution_label = factor(solution_label, levels = solution_levels_sacc))
+```
+
+```{r eval=FALSE}
+# ── left: licking by solution ─────────────────────────────────────────────────
+fn_stem_b_lick <- 'fp_sacc_summary_combined_licking'
+
+df_licking_summary_sacc %>%
+  ggplot(aes(solution_label, lick_count, group = 1)) +
+  geom_line(aes(group = subject), linewidth = 1/2, alpha = 1/4) +
+  stat_summary(fun = 'mean', geom = 'line') +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0) +
+  theme_ag01(6) +
+  coord_cartesian(xlim = c(0.5, 5.5), ylim = c(0, 20), expand = FALSE) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  ylab('Lick count') +
+  force_panelsizes(cols = unit(10, 'mm'), rows = unit(13.447, 'mm'))
+
+save_pdf(dir_output_b, str_c(fn_stem_b_lick, '.pdf'), 12, 12)
+df_licking_summary_sacc %>% write_csv(str_c(dir_output_b, fn_stem_b_lick, '_data.csv'))
+
+stats_list_lick <- df_licking_summary_sacc %>%
+  aov_rm_one_within(dir_output_b, fn_stem_b_lick, 'subject', 'lick_count', 'solution')
+```
+
+```{r eval=FALSE}
+# ── licking correlation: sacc20 vs sucrose10 ─────────────────────────────────
+fn_stem_b_corr <- 'fp_sacc_summary_combined_licking_corr_sacc_vs_sucrose10'
+
+df_licking_corr <- df_licking_summary_sacc %>%
+  filter(solution %in% c('sacc20', 'sucrose10')) %>%
+  select(subject, solution, lick_count) %>%
+  spread(solution, lick_count)
+
+df_licking_corr %>%
+  ggplot(aes(sucrose10, sacc20)) +
+  geom_abline(slope = 1, intercept = 0, linewidth = 1/3, color = 'darkgrey') +
+  geom_smooth(method = 'lm', color = 'red', fill = 'red', linewidth = 1/2) +
+  stat_cor(method = 'pearson', size = 2, label.y = 16, aes(group = 1), color = 'black') +
+  geom_point(size = 1/2) +
+  theme_ag01(6) +
+  coord_cartesian(xlim = c(0, 15), ylim = c(0, 15), expand = FALSE, clip = 'off') +
+  force_panelsizes(cols = unit(13.447, 'mm'), rows = unit(13.447, 'mm'))
+
+stats_corr <- df_licking_corr %>% tidy_cor('sacc20', 'sucrose10')
+
+save_pdf(dir_output_b, str_c(fn_stem_b_corr, '.pdf'), 12, 12)
+df_licking_corr  %>% write_csv(str_c(dir_output_b, fn_stem_b_corr, '_data.csv'))
+stats_corr       %>% write_csv(str_c(dir_output_b, fn_stem_b_corr, '_stats_cor.csv'))
+```
+
+---
+
+## sfig09c: saccharine — sucrose10 vs sacc20 (binned lick left, trace top, summary bar bottom)
+```{r eval=FALSE}
+dir_output_c <- str_c(dir_output, 'c/')
+dir.create(dir_output_c, recursive = TRUE, showWarnings = FALSE)
+
+# binned licking trace
+df_binnedlick_sacc <- read_csv(str_c(dir_combined_setid, 'frmultisacc_full_binnedlick_trace_overall.csv'), show_col_types = FALSE) %>%
+  format_set_id(key_set_id) %>%
+  left_join(solution_factor_key %>% select(solution, solution_label), by = 'solution') %>%
+  mutate(solution_label = factor(solution_label, levels = solution_levels_sacc))
+
+# trace data for the sucrose10 vs sacc20 comparison (top sub-panel below)
+plt_data_trace_sacc <- read_csv(str_c(dir_combined_setid, 'frmultisacc_filtlick_peth_summary_trace_overall.csv'), show_col_types = FALSE) %>%
+  filt_and_format_data() %>%
+  mutate(solution_label = factor(solution_label, levels = solution_levels_sacc))
+```
+
+```{r eval=FALSE}
+# ── left: binned licking trace (sucrose10 vs sacc20) ─────────────────────────
+fn_stem_c_lick <- 'fp_sacc_binnedlick_10suc_20sacc'
+
+plt_data_c_lick <- df_binnedlick_sacc %>%
+  filter(solution %in% c('sucrose10', 'sacc20'))
+
+plt <- plt_data_c_lick %>%
+  ggplot(aes(time_rel, lick_hz_mean, group = solution_label, color = solution_label, fill = solution_label)) +
+  annotate("rect", xmin = 0, xmax = 3, ymin = -Inf, ymax = Inf, alpha = 1/3, fill = "darkgrey") +
+  geom_hline(yintercept = 0, color = 'darkgrey', size = 0.5) +
+  geom_ribbon(aes(ymin = lick_hz_mean - lick_hz_sem,
+                  ymax = lick_hz_mean + lick_hz_sem),
+              alpha = 1/3, color = NA) +
+  geom_line() +
+  scale_color_manual(values = solution_colors_sacc[c(3, 5)]) +
+  scale_fill_manual(values  = solution_colors_sacc[c(3, 5)]) +
+  theme_ag01(6) +
+  theme(strip.text = element_text(margin = margin(t = 5, r = 5, b = 5, l = 5))) +
+  theme(panel.spacing.y = unit(0.8, "lines")) +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(2, 'cm'))
+
+plt <- plt %>%
+  add_scale_bar(origin = c(-(3 * 0.1), -1), x_len = 1, y_len = 1)
+
+plt
+save_pdf(dir_output_c, str_c(fn_stem_c_lick, '.pdf'), 12, 12)
+plt_data_c_lick %>% write_csv(str_c(dir_output_c, fn_stem_c_lick, '_data.csv'))
+```
+
+```{r eval=FALSE, fig.width=9, fig.height = 3}
+# ── top: FP trace (sucrose10 vs sacc20) ──────────────────────────────────────
+fn_stem_c_trace <- 'fp_sacc_trace_10suc_20sacc'
+
+plt_data_c_trace <- plt_data_trace_sacc %>%
+  filter(solution %in% c('sucrose10', 'sacc20'))
+
+plt <- plt_data_c_trace %>%
+  ggplot(aes(time_rel, zscore_blsub_mean, group = solution_label, color = solution_label, fill = solution_label)) +
+  annotate("rect", xmin = 0, xmax = 3, ymin = -Inf, ymax = Inf, alpha = 1/3, fill = "darkgrey") +
+  geom_hline(yintercept = 0, color = 'darkgrey', size = 0.5) +
+  geom_ribbon(aes(ymin = zscore_blsub_mean - zscore_blsub_sem,
+                  ymax = zscore_blsub_mean + zscore_blsub_sem),
+              alpha = 1/3, color = NA) +
+  geom_line() +
+  facet_grid(set_id ~ region) +
+  scale_color_manual(values = solution_colors_sacc[c(3, 5)]) +
+  scale_fill_manual(values  = solution_colors_sacc[c(3, 5)]) +
+  theme_ag01(6) +
+  theme(strip.text = element_text(margin = margin(t = 5, r = 5, b = 5, l = 5))) +
+  theme(panel.spacing.y = unit(0.8, "lines")) +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(2, 'cm'))
+
+plt <- plt %>%
+  add_scale_bar(origin = c(-3, -1), x_len = 1, y_len = 1)
+
+plt
+save_pdf(dir_output_c, str_c(fn_stem_c_trace, '.pdf'), 12, 12)
+plt_data_c_trace %>% write_csv(str_c(dir_output_c, fn_stem_c_trace, '_data.csv'))
+```
+
+```{r eval=FALSE}
+# ── bottom: summary bar sacc20 vs sucrose10 (sustained) ──────────────────────
+fn_stem_c_bar <- 'fp_sacc_summary_combined_sustained_sacc_vs_sucrose10'
+
+plt_data_c_bar <- df_fp_summary_sacc %>%
+  filter(solution %in% c('sacc20', 'sucrose10')) %>%
+  filter(time_bin == 'sustained')
+
+ttest_results_c <- plt_data_c_bar %>%
+  select(subject, region, solution, zscore_blsub_mean) %>%
+  spread(solution, zscore_blsub_mean) %>%
+  tidy_ttest_paired(NA, NA, 'sacc20', 'sucrose10', 'region') %>%
+  quick_sig()
+
+plt_annotation_c <- ttest_results_c %>%
+  mutate(solution_label = 1.5, zscore_blsub_mean = 4.8)
+
+plt_data_c_bar %>%
+  ggplot(aes(solution_label, zscore_blsub_mean, group = 1)) +
+  geom_hline(yintercept = 0, size = 1/4, color = 'darkgrey') +
+  geom_line(aes(group = subject), alpha = 1/4) +
+  stat_summary(fun = 'mean', geom = 'line') +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0) +
+  geom_text(data = plt_annotation_c, aes(label = sig_symbol)) +
+  theme_ag01(6) +
+  facet_grid(. ~ region) +
+  coord_cartesian(xlim = c(0, 3), ylim = c(-2.5, 5), expand = FALSE, clip = 'off') +
+  theme(panel.spacing.y = unit(0.8, "lines")) +
+  theme(strip.text = element_text(margin = margin(t = 5, r = 5, b = 5, l = 5))) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  force_panelsizes(cols = unit(13.447, 'mm'), rows = unit(13.447, 'mm'))
+
+save_pdf(dir_output_c, str_c(fn_stem_c_bar, '.pdf'), 12, 12)
+plt_data_c_bar   %>% write_csv(str_c(dir_output_c, fn_stem_c_bar, '_data.csv'))
+ttest_results_c  %>% write_csv(str_c(dir_output_c, fn_stem_c_bar, '_stats_ttest.csv'))
+```
+
+---
+
+## sfig09d: saccharine delta bar (sacc20 − sucrose10, sustained)
+```{r eval=FALSE}
+dir_output_d <- str_c(dir_output, 'd/')
+dir.create(dir_output_d, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_d <- 'fp_sacc_summary_combined_sustained_sacc_vs_sucrose10_delta'
+
+plt_data_d <- df_fp_summary_sacc %>%
+  filter(solution %in% c('sacc20', 'sucrose10')) %>%
+  filter(time_bin == 'sustained') %>%
+  select(subject, region, solution, zscore_blsub_mean) %>%
+  spread(solution, zscore_blsub_mean) %>%
+  mutate(sacc20_minus_sucrose10 = sacc20 - sucrose10)
+```
+
+```{r eval=FALSE}
+plt_data_d %>%
+  ggplot(aes(region, sacc20_minus_sucrose10)) +
+  stat_summary(fun = 'mean', geom = 'bar', aes(group = 1), width = 2/3, alpha = 1/3) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = 1), width = 0) +
+  geom_hline(yintercept = 0, linewidth = 1/2, color = 'darkgrey') +
+  theme_ag01(6) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  coord_cartesian(xlim = c(0.5, 9.5), ylim = c(-0.5, 2.0), clip = 'off', expand = 0) +
+  force_panelsizes(rows = unit(26, 'mm'), cols = unit(23, 'mm')) +
+  theme(strip.text = element_text(margin = margin(t = 5, r = 5, b = 5, l = 5))) +
+  theme(panel.spacing.y = unit(0.8, "lines")) +
+  ylab('Saccharine - sucrose') +
+  xlab('')
+
+save_pdf(dir_output_d, str_c(fn_stem_d, '.pdf'), 12, 12)
+plt_data_d %>% write_csv(str_c(dir_output_d, fn_stem_d, '_data.csv'))
+
+# stats: one-way ANOVA, STR regions
+stats_list_d_str <- plt_data_d %>%
+  filter(!region %>% str_detect('LHA')) %>%
+  mutate(subject_dummy = str_c(subject, '_', row_number())) %>%
+  aov_rm_one_between(dir_output_d, str_c(fn_stem_d, '_str'), 'subject_dummy', 'sacc20_minus_sucrose10', 'region')
+
+# stats: one-way ANOVA, LHA regions
+stats_list_d_lha <- plt_data_d %>%
+  filter(region %>% str_detect('LHA')) %>%
+  mutate(subject_dummy = str_c(subject, '_', row_number())) %>%
+  aov_rm_one_between(dir_output_d, str_c(fn_stem_d, '_lha'), 'subject_dummy', 'sacc20_minus_sucrose10', 'region')
+```
+
+---
+
+## sfig09f: water lick rate (left: binned lick trace, right: lick count bar)
+```{r eval=FALSE}
+dir_output_f <- str_c(dir_output, 'f/')
+dir.create(dir_output_f, recursive = TRUE, showWarnings = FALSE)
+
+set_ids_water <- c('frmultisacc', 'frsuc', 'wrnacl', 'wrsuc', 'wrwater')
+order_set_id      <- c('WR:NaCl', 'WR:Water', 'WR:Suc', 'FR:Suc', 'FR:Sacc')
+order_set_id_indx <- c(3, 5, 1, 2, 4)
+
+# binned lick trace from preprocessing
+df_binnedlick_water <- read.csv(str_c(dir_output_pre, 'fp_str_water_binnedlick_data.csv')) %>%
+  mutate(set_id = factor(set_id, levels = order_set_id))
+
+# subject-level licking summary from combined_setid
+subjects_include <- log_analysis_subjects %>%
+  filter(inclusion_consumption == 1) %>%
+  pull(subject)
+
+log_data_water <- log_analysis_fp %>%
+  filter(is.na(exclude) | exclude != 1) %>%
+  filter(subject %in% subjects_include) %>%
+  get_set_id() %>%
+  filter(!is.na(set_id))
+
+subjects_wrwater <- log_data_water %>%
+  filter(set_id == 'wrwater') %>%
+  pull(subject) %>%
+  unique()
+
+log_data_water <- log_data_water %>%
+  filter(subject %in% subjects_wrwater) %>%
+  filter(set_id %in% set_ids_water)
+
+fns_f <- list.files(dir_combined_setid)
+fns_f_trial <- fns_f[fns_f %>% str_detect('filtlick') &
+                     fns_f %>% str_detect('peth_summary_means_trial')] %>%
+  str_remove('.csv')
+fns_f_trial <- fns_f_trial[grepl(paste(set_ids_water, collapse = "|"), fns_f_trial)]
+
+plt_data_licking_f <- combined_import(
+  import_directory = dir_combined_setid,
+  filter_strings   = fns_f_trial,
+  prefixes         = NA,
+  suffixes         = c('.csv'),
+  verbose          = 0
+)[[1]] %>%
+  filter(set_id %in% set_ids_water) %>%
+  filter(subject %in% log_data_water$subject) %>%
+  filt_and_format_data() %>%
+  filter(solution_label == 'Water') %>%
+  filter(time_bin == 'sustained') %>%
+  select(blockname, set_id, subject, trial_num, solution_label, lick_count) %>%
+  unique()
+
+plt_data_licking_summary_f <- plt_data_licking_f %>%
+  group_by(set_id, subject, solution_label) %>%
+  summarise(
+    lick_count            = mean(lick_count),
+    .groups = 'drop'
+  ) %>%
+  mutate(set_id = factor(set_id, levels = order_set_id))
+```
+
+```{r eval=FALSE}
+# ── left: binned licking trace ────────────────────────────────────────────────
+fn_stem_f_lick <- 'fp_str_water_binnedlick'
+
+plt <- df_binnedlick_water %>%
+  ggplot(aes(time_rel, lick_hz_mean, group = set_id, color = set_id, fill = set_id)) +
+  annotate("rect", xmin = 0, xmax = 3, ymin = -Inf, ymax = Inf, alpha = 1/3, fill = "darkgrey") +
+  geom_hline(yintercept = 0, color = 'darkgrey', size = 0.5) +
+  geom_ribbon(aes(ymin = lick_hz_mean - lick_hz_sem,
+                  ymax = lick_hz_mean + lick_hz_sem),
+              alpha = 1/3, color = NA) +
+  geom_line() +
+  scale_color_manual(values = colors_setid[order_set_id_indx]) +
+  scale_fill_manual(values  = colors_setid[order_set_id_indx]) +
+  theme_ag01(6) +
+  theme(strip.text = element_text(margin = margin(t = 5, r = 5, b = 5, l = 5))) +
+  theme(panel.spacing.y = unit(0.8, "lines")) +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(2, 'cm'))
+
+plt <- plt %>%
+  add_scale_bar(origin = c(-(3 * 0.1), -1), x_len = 1, y_len = 1)
+
+plt
+save_pdf(dir_output_f, str_c(fn_stem_f_lick, '.pdf'), 12, 12)
+df_binnedlick_water %>% write_csv(str_c(dir_output_f, fn_stem_f_lick, '_data.csv'))
+```
+
+```{r eval=FALSE}
+# ── right: lick count bar by set_id ──────────────────────────────────────────
+fn_stem_f_bar <- 'fp_str_water_summary_licking'
+
+plt_data_licking_summary_f %>%
+  ggplot(aes(set_id, lick_count, color = set_id, fill = set_id)) +
+  geom_hline(yintercept = 0, size = 1/4, color = 'darkgrey') +
+  stat_summary(fun = 'mean', geom = 'bar', aes(group = 1), width = 2/3, alpha = 1/3, color = NA) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = 1), width = 0) +
+  theme_ag01(6) +
+  theme(axis.text.x = element_blank()) +
+  coord_cartesian(xlim = c(0.2, 5.8), ylim = c(0, 20), clip = 'off', expand = 0) +
+  force_panelsizes(rows = unit(13.448, 'mm'), cols = unit(10, 'mm')) +
+  theme(strip.text = element_text(margin = margin(t = 5, r = 5, b = 5, l = 5))) +
+  theme(panel.spacing.y = unit(0.8, "lines")) +
+  scale_color_manual(values = colors_setid[order_set_id_indx]) +
+  scale_fill_manual(values  = colors_setid[order_set_id_indx]) +
+  ylab('Lick count') +
+  xlab('')
+
+save_pdf(dir_output_f, str_c(fn_stem_f_bar, '.pdf'), 12, 12)
+plt_data_licking_summary_f %>% write_csv(str_c(dir_output_f, fn_stem_f_bar, '_data.csv'))
+
+# one-way ANOVA: lick count ~ set_id (between subjects, dummy for repeated)
+stats_list_f <- plt_data_licking_summary_f %>%
+  mutate(subject_dummy = subject %>% str_c('_', row_number())) %>%
+  aov_rm_one_between(dir_output_f, fn_stem_f_bar, 'subject_dummy', 'lick_count', 'set_id')
+```
+
+---
+
+## sfig09g: water FP (top: trace, bottom: summary bar + one-way ANOVA)
+```{r eval=FALSE}
+dir_output_g <- str_c(dir_output, 'g/')
+dir.create(dir_output_g, recursive = TRUE, showWarnings = FALSE)
+
+# FP trace from preprocessing
+plt_data_trace_water <- read.csv(str_c(dir_output_pre, 'fp_str_water_trace_data.csv')) %>%
+  mutate(region = region %>% factor(levels = key_regions$region_label %>% unique())) %>%
+  mutate(set_id = factor(set_id, levels = order_set_id))
+
+# FP subject summary from combined_setid
+fns_g <- list.files(dir_combined_setid)
+fns_g_sbj <- fns_g[fns_g %>% str_detect('filtlick') &
+                   fns_g %>% str_detect('peth_summary_means_subject')] %>%
+  str_remove('.csv')
+fns_g_sbj <- fns_g_sbj[grepl(paste(set_ids_water, collapse = "|"), fns_g_sbj)]
+
+plt_data_summary_g <- combined_import(
+  import_directory = dir_combined_setid,
+  filter_strings   = fns_g_sbj,
+  prefixes         = NA,
+  suffixes         = c('.csv'),
+  verbose          = 0
+)[[1]] %>%
+  filter(set_id %in% set_ids_water) %>%
+  filter(subject %in% log_data_water$subject) %>%
+  filt_and_format_data() %>%
+  filter(solution_label == 'Water') %>%
+  mutate(set_id = factor(set_id, levels = order_set_id))
+```
+
+```{r eval=FALSE, fig.width = 9, fig.height = 3}
+# ── top: FP trace ─────────────────────────────────────────────────────────────
+fn_stem_g_trace <- 'fp_str_water_trace'
+
+plt <- plt_data_trace_water %>%
+  ggplot(aes(time_rel, zscore_blsub_mean, group = set_id, color = set_id, fill = set_id)) +
+  annotate("rect", xmin = 0, xmax = 3, ymin = -Inf, ymax = Inf, alpha = 1/3, fill = "darkgrey") +
+  geom_hline(yintercept = 0, color = 'darkgrey', size = 0.5) +
+  geom_ribbon(aes(ymin = zscore_blsub_mean - zscore_blsub_sem,
+                  ymax = zscore_blsub_mean + zscore_blsub_sem),
+              alpha = 1/3, color = NA) +
+  geom_line() +
+  facet_grid(. ~ region) +
+  scale_color_manual(values = colors_setid[order_set_id_indx]) +
+  scale_fill_manual(values  = colors_setid[order_set_id_indx]) +
+  theme_ag01(6) +
+  theme(strip.text = element_text(margin = margin(t = 5, r = 5, b = 5, l = 5))) +
+  theme(panel.spacing.y = unit(0.8, "lines")) +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(2, 'cm'))
+
+plt <- plt %>%
+  add_scale_bar(origin = c(-3, -1), x_len = 1, y_len = 1)
+
+plt
+save_pdf(dir_output_g, str_c(fn_stem_g_trace, '.pdf'), 12, 12)
+plt_data_trace_water %>% write_csv(str_c(dir_output_g, fn_stem_g_trace, '_data.csv'))
+```
+
+```{r eval=FALSE, fig.width = 9, fig.height = 3}
+# ── bottom: summary bar (sustained) + one-way RM ANOVA (set_id within region) ─
+fn_stem_g_bar <- 'fp_str_water_summary_peth_sustained'
+
+plt_data_g_bar <- plt_data_summary_g %>%
+  filter(time_bin == 'sustained')
+
+plt_data_g_bar %>%
+  ggplot(aes(set_id, zscore_blsub_mean, color = set_id, fill = set_id)) +
+  geom_hline(yintercept = 0, size = 1/4, color = 'darkgrey') +
+  stat_summary(fun = 'mean', geom = 'bar', aes(group = 1), width = 2/3, alpha = 1/3, color = NA) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = 1), width = 0) +
+  theme_ag01(6) +
+  theme(axis.text.x = element_blank()) +
+  facet_grid(. ~ region, scales = 'free') +
+  coord_cartesian(xlim = c(0.5, 5.5), ylim = c(-2, 6), clip = 'off', expand = 0) +
+  force_panelsizes(rows = unit(4, 'cm'), cols = unit(2, 'cm')) +
+  theme(strip.text = element_text(margin = margin(t = 5, r = 5, b = 5, l = 5))) +
+  theme(panel.spacing.y = unit(0.8, "lines")) +
+  scale_color_manual(values = colors_setid[order_set_id_indx]) +
+  scale_fill_manual(values  = colors_setid[order_set_id_indx]) +
+  ylab('Z-score sustained (2-3 s)') +
+  xlab('')
+
+save_pdf(dir_output_g, str_c(fn_stem_g_bar, '.pdf'), 12, 12)
+plt_data_g_bar %>% write_csv(str_c(dir_output_g, fn_stem_g_bar, '_data.csv'))
+
+# one-way RM ANOVA per region: set_id effect
+regions_g <- unique(plt_data_g_bar$region)
+
+results_g <- map(regions_g, function(r) {
+  plt_data_g_bar %>%
+    filter(region == r) %>%
+    aov_rm_one_within(NA, NA, 'subject', 'zscore_blsub_mean', 'set_id')
+})
+
+stats_main_g <- map_dfr(seq_along(regions_g), function(i) {
+  results_g[[i]][[2]] %>% mutate(region = regions_g[i], .before = 1)
+})
+stats_hsd_g <- map_dfr(seq_along(regions_g), function(i) {
+  results_g[[i]][[3]] %>% mutate(region = regions_g[i], .before = 1)
+})
+
+stats_main_g %>% write_csv(str_c(dir_output_g, fn_stem_g_bar, '_aov.csv'))
+stats_hsd_g  %>% write_csv(str_c(dir_output_g, fn_stem_g_bar, '_aov_hsd.csv'))
+```
+
+---
+
+## sfig09h: water response heat map by set_id (mean sustained z-score)
+```{r eval=FALSE}
+dir_output_h <- str_c(dir_output, 'h/')
+dir.create(dir_output_h, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_h <- 'fp_str_water_summary_peth_sustained_heat'
+
+plt_data_h <- plt_data_summary_g %>%
+  filter(time_bin == 'sustained') %>%
+  group_by(set_id, region) %>%
+  summarise(zscore_blsub_mean = mean(zscore_blsub_mean), .groups = 'drop')
+
+set_order_h <- plt_data_h %>%
+  group_by(set_id) %>%
+  summarise(zscore_blsub_mean_overall = mean(zscore_blsub_mean), .groups = 'drop') %>%
+  arrange(zscore_blsub_mean_overall) %>%
+  pull(set_id)
+```
+
+```{r eval=FALSE}
+lo_h <- -1
+hi_h <-  4
+
+plt_data_h %>%
+  mutate(set_id = set_id %>% factor(levels = set_order_h)) %>%
+  ggplot(aes(region, set_id, fill = zscore_blsub_mean)) +
+  geom_tile() +
+  theme_ag01(6) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  coord_cartesian(xlim = c(0.5, 9.5), ylim = c(0.5, 5.5), clip = 'off', expand = 0) +
+  force_panelsizes(rows = unit(13.445, 'mm'), cols = unit(30, 'mm')) +
+  theme(strip.text = element_text(margin = margin(t = 5, r = 5, b = 5, l = 5))) +
+  theme(panel.spacing.y = unit(0.8, "lines")) +
+  ylab('') + xlab('') +
+  scale_fill_gradientn(
+    colours = c("blue", "white", "red"),
+    values  = rescale(c(lo_h, 0, hi_h)),
+    limits  = c(lo_h, hi_h),
+    oob     = squish
+  )
+
+save_pdf(dir_output_h, str_c(fn_stem_h, '.pdf'), 12, 12)
+plt_data_h %>% write_csv(str_c(dir_output_h, fn_stem_h, '_data.csv'))
+```
+
+---
+
+## sfig09i: water response binned by licking (heat map + mixed model)
+```{r eval=FALSE}
+dir_output_i <- str_c(dir_output, 'i/')
+dir.create(dir_output_i, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_i <- 'fp_str_water_heat_setid_vs_binnedlick'
+
+# trial-level data (already loaded for sfig09f; reload with wider columns)
+fns_i <- list.files(dir_combined_setid)
+fns_i_trial <- fns_i[fns_i %>% str_detect('filtlick') &
+                     fns_i %>% str_detect('peth_summary_means_trial')] %>%
+  str_remove('.csv')
+fns_i_trial <- fns_i_trial[grepl(paste(set_ids_water, collapse = "|"), fns_i_trial)]
+
+plt_data_trial_i <- combined_import(
+  import_directory = dir_combined_setid,
+  filter_strings   = fns_i_trial,
+  prefixes         = NA,
+  suffixes         = c('.csv'),
+  verbose          = 0
+)[[1]] %>%
+  filter(set_id %in% set_ids_water) %>%
+  filter(subject %in% log_data_water$subject) %>%
+  filt_and_format_data() %>%
+  filter(solution_label == 'Water') %>%
+  filter(time_bin == 'sustained') %>%
+  select(set_id, blockname, subject, region, trial_num, solution, solution_label, lick_count, zscore_blsub_mean)
+
+# licking normalization within set_id × subject
+plt_data_licking_i <- plt_data_trial_i %>%
+  select(blockname, set_id, subject, trial_num, solution_label, lick_count) %>%
+  unique() %>%
+  group_by(set_id, subject) %>%
+  mutate(mean_setid_lick_count   = mean(lick_count)) %>%
+  mutate(lick_count_normalized   = lick_count / mean_setid_lick_count) %>%
+  ungroup()
+
+plt_data_trial_i <- plt_data_trial_i %>%
+  left_join(plt_data_licking_i %>%
+              select(blockname, set_id, trial_num, lick_count_normalized),
+            by = c('set_id', 'blockname', 'trial_num')) %>%
+  mutate(set_id = factor(set_id, levels = order_set_id))
+
+plt_data_trial_binnedlick_i <- plt_data_trial_i %>%
+  mutate(lick_count_binned = cut(lick_count, breaks = seq(0, 25, 5))) %>%
+  group_by(set_id, subject, region, solution, solution_label, lick_count_binned) %>%
+  summarise(
+    sample_count          = n(),
+    zscore_blsub_mean     = mean(zscore_blsub_mean),
+    lick_count_normalized = mean(lick_count_normalized),
+    .groups = 'drop'
+  )
+```
+
+```{r eval=FALSE}
+# ── heat map: lick bin × set_id ───────────────────────────────────────────────
+lo_i <- -2
+hi_i <-  4
+
+plt_data_heat_i <- plt_data_trial_binnedlick_i %>%
+  group_by(set_id, region, solution_label, lick_count_binned) %>%
+  summarise(zscore_blsub_mean = mean(zscore_blsub_mean), .groups = 'drop') %>%
+  filter(!is.na(lick_count_binned))
+
+plt_data_heat_i %>%
+  ggplot(aes(lick_count_binned, set_id, fill = zscore_blsub_mean)) +
+  geom_tile() +
+  facet_grid(. ~ region) +
+  theme_ag01(6) +
+  coord_cartesian(xlim = c(0.5, 5.5), ylim = c(0.5, 5.5), clip = 'off', expand = 0) +
+  force_panelsizes(rows = unit(12, 'mm'), cols = unit(9.578, 'mm')) +
+  theme(strip.text = element_text(margin = margin(t = 5, r = 5, b = 5, l = 5))) +
+  theme(panel.spacing.y = unit(0.8, "lines")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  ylab('') + xlab('') +
+  scale_fill_gradientn(
+    colours = c("blue", "white", "red"),
+    values  = rescale(c(lo_i, 0, hi_i)),
+    limits  = c(lo_i, hi_i),
+    oob     = squish
+  )
+
+save_pdf(dir_output_i, str_c(fn_stem_i, '.pdf'), 12, 12)
+plt_data_heat_i %>% write_csv(str_c(dir_output_i, fn_stem_i, '_data.csv'))
+```
+
+```{r eval=FALSE}
+# ── mixed model: set_id × lick_count interaction per region ──────────────────
+model_data_i <- plt_data_trial_i %>%
+  select(set_id, subject, blockname, region, trial_num, lick_count, zscore_blsub_mean) %>%
+  mutate(lick_count_scaled = scale(lick_count)[, 1])
+
+regions_i <- levels(model_data_i$region)
+
+region_models_i <- map(set_names(regions_i), function(reg) {
+  df <- filter(model_data_i, region == reg)
+  tryCatch(
+    lmer(
+      zscore_blsub_mean ~ set_id * lick_count_scaled +
+        (1 + lick_count_scaled | subject) +
+        (1 | blockname),
+      data    = df,
+      REML    = TRUE,
+      control = lmerControl(optimizer = "bobyqa")
+    ),
+    error = function(e) { message("Failed for region: ", reg, "\n", e$message); NULL }
+  )
+})
+
+region_anova_i <- map_dfr(region_models_i, function(m) {
+  if (is.null(m)) return(NULL)
+  anova(m) %>%
+    as.data.frame() %>%
+    rownames_to_column("term") %>%
+    filter(term %in% c("set_id", "lick_count_scaled", "set_id:lick_count_scaled"))
+}, .id = "region") %>%
+  clean_names()
+
+region_anova_i %>% write_csv(str_c(dir_output_i, fn_stem_i, '_stats_mmanova.csv'))
+
+region_anova_i %>%
+  rename(p_value = pr_f) %>%
+  quick_sig() %>%
+  mutate(region = region %>% factor(levels = key_regions$region_label %>% unique())) %>%
+  ggplot(aes(region, term, label = sig_symbol)) +
+  geom_text()
+```
+
+---
+
+## sfig09j: satiation licking by trial bin (solution × trial bin heat map)
+```{r eval=FALSE}
+dir_output_j <- str_c(dir_output, 'j/')
+dir.create(dir_output_j, recursive = TRUE, showWarnings = FALSE)
+
+set_ids_sat <- c('frmultisacc', 'frsuc', 'wrnacl', 'wrsuc', 'wrwater', 'wrwatersat')
+
+# trial-level data for satiation analysis
+fns_sat <- list.files(dir_combined_setid)
+fns_sat_trial <- fns_sat[fns_sat %>% str_detect('filtlick') &
+                         !fns_sat %>% str_detect('triallick') &
+                         fns_sat %>% str_detect('peth_summary_means_trial')] %>%
+  str_remove('.csv')
+fns_sat_trial <- fns_sat_trial[grepl(paste(set_ids_sat, collapse = "|"), fns_sat_trial)]
+
+plt_data_trial_sat <- combined_import(
+  import_directory = dir_combined_setid,
+  filter_strings   = fns_sat_trial,
+  prefixes         = NA,
+  suffixes         = c('.csv'),
+  verbose          = 0
+)[[1]] %>%
+  filt_and_format_data() %>%
+  filter(!fn %>% str_detect('_triallick.csv'))
+
+plt_data_licking_sat <- plt_data_trial_sat %>%
+  filter(time_bin == 'sustained') %>%
+  select(blockname, set_id, subject, trial_num, solution, solution_label, lick_count) %>%
+  unique()
+
+# binned trial licking (10-trial bins)
+plt_data_licking_binned_sat <- plt_data_licking_sat %>%
+  mutate(bin_trial = str_pad(((trial_num - 1) %/% 10) * 10, width = 2, pad = "0")) %>%
+  group_by(blockname, set_id, subject, bin_trial, solution, solution_label) %>%
+  summarise(lick_count = mean(lick_count), .groups = 'drop') %>%
+  group_by(blockname, set_id, subject, bin_trial) %>%
+  mutate(lick_count_binned_mean = mean(lick_count)) %>%
+  ungroup() %>%
+  mutate(lick_count_binned_mean_normalized = lick_count / lick_count_binned_mean)
+
+plt_data_licking_binned_summary_sat <- plt_data_licking_binned_sat %>%
+  group_by(set_id, subject, bin_trial, solution_label) %>%
+  summarise(
+    lick_count_mean                    = mean(lick_count),
+    lick_count_binned_mean_normalized  = mean(lick_count_binned_mean_normalized),
+    .groups = 'drop'
+  )
+```
+
+```{r eval=FALSE}
+fn_stem_j <- 'fp_satiation_water_trialbin_setid_licking'
+
+plt_data_j <- plt_data_licking_binned_sat %>%
+  filter(set_id %in% c('WR:Suc', 'FR:Suc', 'WR:NaCl'))
+
+plt_data_j %>%
+  mutate(bin_trial = bin_trial %>% as.integer()) %>%
+  ggplot(aes(solution_label, lick_count, group = bin_trial, color = bin_trial)) +
+  stat_summary(fun = 'mean', geom = 'line') +
+  scale_color_viridis_c(end = 0.6, option = 'magma', direction = -1) +
+  facet_grid(. ~ set_id, scales = 'free') +
+  theme_ag01(6) +
+  coord_cartesian(xlim = c(0.5, 5.5), ylim = c(0, 25), expand = FALSE, clip = 'off') +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  force_panelsizes(rows = unit(20, 'mm'), col = unit(10, 'mm')) +
+  ylab('Mean lick count') +
+  xlab('')
+
+save_pdf(dir_output_j, str_c(fn_stem_j, '.pdf'), 12, 12)
+plt_data_j %>% write_csv(str_c(dir_output_j, fn_stem_j, '_data.csv'))
+
+# mixed model: lick_count ~ bin_trial * solution (per set_id)
+results_j <- plt_data_j %>%
+  group_by(set_id) %>%
+  group_modify(~{
+    m <- lmer(lick_count ~ bin_trial * solution + (1 | subject),
+              data    = .x,
+              REML    = TRUE,
+              control = lmerControl(optimizer = "bobyqa"))
+    anova(m) %>% as.data.frame() %>% rownames_to_column('term')
+  }) %>%
+  ungroup() %>%
+  clean_names()
+
+results_j %>% write_csv(str_c(dir_output_j, fn_stem_j, '_aov.csv'))
+```
+
+---
+
+## sfig09k: satiation rank × trial bin (left: licking, right: z-score)
+```{r eval=FALSE}
+dir_output_k <- str_c(dir_output, 'k/')
+dir.create(dir_output_k, recursive = TRUE, showWarnings = FALSE)
+
+# binned trial signal data
+fns_sat_bins <- fns_sat[fns_sat %>% str_detect('filtlick') &
+                        fns_sat %>% str_detect('peth_summary_means_binnedtrial')] %>%
+  str_remove('.csv')
+fns_sat_bins <- fns_sat_bins[grepl(paste(set_ids_sat, collapse = "|"), fns_sat_bins)]
+
+plt_data_bins_sat <- combined_import(
+  import_directory = dir_combined_setid,
+  filter_strings   = fns_sat_bins,
+  prefixes         = NA,
+  suffixes         = c('.csv'),
+  verbose          = 0
+)[[1]] %>%
+  filter(!fn %>% str_detect('_triallick.csv')) %>%
+  filt_and_format_data() %>%
+  filter(time_bin == 'sustained') %>%
+  select(blockname, subject, set_id, region, time_bin, bin_trial, solution, solution_label, zscore_blsub_mean) %>%
+  left_join(plt_data_licking_binned_sat, by = c('blockname', 'set_id', 'subject', 'bin_trial', 'solution', 'solution_label')) %>%
+  group_by(blockname, set_id, subject, bin_trial) %>%
+  mutate(zscore_blsub_binned_mean = mean(zscore_blsub_mean)) %>%
+  ungroup() %>%
+  mutate(zscore_blsub_mean_normalized = zscore_blsub_mean / zscore_blsub_binned_mean)
+
+# subset to main 3 set_ids + water, rank by solution
+plt_data_k <- plt_data_bins_sat %>%
+  filter(set_id %in% c('WR:Suc', 'FR:Suc', 'WR:NaCl', 'WR:Water')) %>%
+  get_solution_rank() %>%
+  mutate(bin_trial = bin_trial %>% as.integer() + 5) %>%
+  filter(solution_rank %in% c(1, 5)) %>%
+  mutate(solution_rank = ifelse(solution_rank == 1, 'Low', 'High'))
+```
+
+```{r eval=FALSE}
+# ── left: licking by trial bin (high vs low solution rank) ───────────────────
+fn_stem_k_lick <- 'fp_satiation_rank_trialbin_licking'
+
+plt_data_k_lick <- plt_data_licking_binned_sat %>%
+  filter(set_id %in% c('WR:Suc', 'FR:Suc', 'WR:NaCl')) %>%
+  get_solution_rank() %>%
+  mutate(bin_trial = bin_trial %>% as.integer() + 5) %>%
+  filter(solution_rank %in% c(1, 5)) %>%
+  mutate(solution_rank = ifelse(solution_rank == 1, 'Low', 'High')) %>%
+  group_by(set_id, subject, bin_trial, solution_rank) %>%
+  summarise(lick_count = mean(lick_count), .groups = 'drop')
+
+plt_data_k_lick %>%
+  ggplot(aes(bin_trial, lick_count, color = set_id, fill = set_id,
+             linetype = solution_rank, group = interaction(solution_rank, set_id))) +
+  geom_hline(yintercept = 0, color = 'darkgrey', linewidth = 1/3) +
+  stat_summary(fun.data = 'mean_se', geom = 'ribbon', color = NA, alpha = 1/3) +
+  stat_summary(fun = 'mean', geom = 'line') +
+  theme_ag01(6) +
+  facet_grid(solution_rank ~ .) +
+  xlab('Trial bin') +
+  ylab('Mean lick count') +
+  scale_color_manual(values = colors_setid[c(1, 2, 3, 5)]) +
+  scale_fill_manual(values  = colors_setid[c(1, 2, 3, 5)]) +
+  theme(panel.spacing.x = unit(3, "mm")) +
+  theme(panel.spacing.y = unit(4, "mm")) +
+  force_panelsizes(rows = unit(1, 'cm'), cols = unit(1, 'cm')) +
+  coord_cartesian(xlim = c(0, 100), ylim = c(0, 20), expand = FALSE, clip = 'off') +
+  scale_x_continuous(breaks = c(0, 50, 100))
+
+save_pdf(dir_output_k, str_c(fn_stem_k_lick, '.pdf'), 12, 12)
+plt_data_k_lick %>% write_csv(str_c(dir_output_k, fn_stem_k_lick, '_data.csv'))
+```
+
+```{r eval=FALSE}
+# ── right: z-score by trial bin (high vs low solution rank) ──────────────────
+fn_stem_k_zs <- 'fp_satiation_rank_trialbin_zscore'
+
+plt_data_k_zs <- plt_data_k %>%
+  group_by(set_id, subject, region, bin_trial, solution_rank) %>%
+  summarise(zscore_blsub_mean = mean(zscore_blsub_mean), .groups = 'drop')
+
+plt_data_k_zs %>%
+  ggplot(aes(bin_trial, zscore_blsub_mean, color = set_id, fill = set_id,
+             linetype = solution_rank, group = interaction(solution_rank, set_id))) +
+  geom_hline(yintercept = 0, color = 'darkgrey', linewidth = 1/3) +
+  stat_summary(fun.data = 'mean_se', geom = 'ribbon', color = NA, alpha = 1/3) +
+  stat_summary(fun = 'mean', geom = 'line') +
+  theme_ag01(6) +
+  facet_grid(solution_rank ~ region) +
+  xlab('Trial bin') +
+  ylab('Z-score') +
+  scale_color_manual(values = colors_setid[c(1, 2, 3, 5)]) +
+  scale_fill_manual(values  = colors_setid[c(1, 2, 3, 5)]) +
+  coord_cartesian(xlim = c(0, 100), ylim = c(-3, 6), expand = FALSE, clip = 'off') +
+  scale_y_continuous(breaks = c(-3, 0, 3, 6)) +
+  scale_x_continuous(breaks = c(0, 50, 100)) +
+  theme(panel.spacing.x = unit(3, "mm")) +
+  theme(panel.spacing.y = unit(4, "mm")) +
+  force_panelsizes(rows = unit(1, 'cm'), cols = unit(0.8, 'cm'))
+
+save_pdf(dir_output_k, str_c(fn_stem_k_zs, '.pdf'), 12, 12)
+plt_data_k_zs %>% write_csv(str_c(dir_output_k, fn_stem_k_zs, '_data.csv'))
+```
+
+---
+
+## sfig09l: satiation — zscore High × Low regression slope bar
+```{r eval=FALSE}
+dir_output_l <- str_c(dir_output, 'l/')
+dir.create(dir_output_l, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_l <- 'fp_satiation_rank_trialbin_zsvszs_slope'
+
+df_slopes_zs_vs_zs <- plt_data_k %>%
+  group_by(set_id, subject, region, bin_trial, solution_rank) %>%
+  summarise(zscore_blsub_mean = mean(zscore_blsub_mean, na.rm = TRUE), .groups = 'drop') %>%
+  spread(solution_rank, zscore_blsub_mean) %>%
+  group_by(subject, set_id, region) %>%
+  summarise(
+    slope = coef(lm(High ~ Low))[["Low"]],
+    .groups = "drop"
+  )
+```
+
+```{r eval=FALSE}
+df_slopes_zs_vs_zs %>%
+  ggplot(aes(region, slope, color = set_id, fill = set_id, group = set_id)) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0, position = position_dodge(0.5)) +
+  stat_summary(fun = 'mean', geom = 'bar', width = 0.5, alpha = 1/3, position = position_dodge(0.5)) +
+  geom_hline(yintercept = 0, linewidth = 1/2, color = 'darkgrey') +
+  theme_ag01(6) +
+  scale_color_manual(values = colors_setid[c(1, 2, 3, 5)]) +
+  scale_fill_manual(values  = colors_setid[c(1, 2, 3, 5)]) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  theme(strip.text = element_text(margin = margin(t = 5, r = 5, b = 5, l = 5))) +
+  theme(panel.spacing.y = unit(3, "mm")) +
+  ylab('High zs × low zs regression slope') +
+  xlab('') +
+  coord_cartesian(xlim = c(0.5, 10.5), ylim = c(-1.5, 1), expand = FALSE, clip = 'off') +
+  force_panelsizes(rows = unit(30, 'mm'), cols = unit(39, 'mm'))
+
+save_pdf(dir_output_l, str_c(fn_stem_l, '_dodge.pdf'), 12, 12)
+df_slopes_zs_vs_zs %>% write_csv(str_c(dir_output_l, fn_stem_l, '_data.csv'))
+
+# mixed ANOVA: slope ~ region (between) × set_id (within)
+# note: aov_rm_one_between_one_within must be available in stats.R
+stats_list_l <- df_slopes_zs_vs_zs %>%
+  filter(!region %>% str_detect('LHA')) %>%
+  group_by(set_id) %>%
+  mutate(subject_dummy = subject %>% str_c('_', row_number())) %>%
+  ungroup() %>%
+  aov_rm_one_between_one_within(dir_output_l, fn_stem_l, 'subject_dummy', 'slope', 'region', 'set_id')
+```
+
+---
+
+## sfig09m: satiation — rank × trial bin slope summary bar
+```{r eval=FALSE}
+dir_output_m <- str_c(dir_output, 'm/')
+dir.create(dir_output_m, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_m <- 'fp_satiation_rank_trialbin_slope'
+
+df_slopes_m <- plt_data_k_zs %>%
+  group_by(subject, set_id, solution_rank, region) %>%
+  summarise(
+    slope = coef(lm(zscore_blsub_mean ~ bin_trial))[["bin_trial"]],
+    .groups = "drop"
+  )
+```
+
+```{r eval=FALSE}
+df_slopes_m %>%
+  ggplot(aes(set_id, slope, color = set_id, fill = set_id)) +
+  geom_hline(yintercept = 0, color = 'darkgrey', linewidth = 1/3) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0) +
+  stat_summary(fun = 'mean', geom = 'bar', width = 0.6) +
+  facet_grid(solution_rank ~ region) +
+  theme_ag01(6) +
+  scale_color_manual(values = colors_setid[c(1, 2, 3, 5)]) +
+  scale_fill_manual(values  = colors_setid[c(1, 2, 3, 5)]) +
+  theme(panel.spacing.x = unit(3, "mm")) +
+  theme(panel.spacing.y = unit(4, "mm")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  coord_cartesian(xlim = c(0.5, 3.5), ylim = c(-0.03, 0.01), expand = FALSE, clip = 'off') +
+  scale_y_continuous(breaks = seq(-0.03, 0.01, 0.01)) +
+  force_panelsizes(rows = unit(1, 'cm'), cols = unit(0.8, 'cm'))
+
+save_pdf(dir_output_m, str_c(fn_stem_m, '.pdf'), 12, 12)
+df_slopes_m %>% write_csv(str_c(dir_output_m, fn_stem_m, '_data.csv'))
+
+# two-way RM ANOVA: slope ~ set_id × solution_rank (within subjects, per region)
+regions_m <- unique(df_slopes_m$region)
+
+stats_main_m <- map_dfr(regions_m, function(r) {
+  stats_list <- df_slopes_m %>%
+    filter(region == r) %>%
+    aov_rm_two_within(NA, NA, 'subject', 'slope', 'set_id', 'solution_rank')
+  stats_list[[2]] %>% mutate(region = r)
+}) %>% select(region, everything())
+
+stats_hsd_m <- map_dfr(regions_m, function(r) {
+  stats_list <- df_slopes_m %>%
+    filter(region == r) %>%
+    aov_rm_two_within(NA, NA, 'subject', 'slope', 'set_id', 'solution_rank')
+  stats_list[[3]] %>% mutate(region = r)
+}) %>% select(region, everything())
+
+stats_main_m %>% write_csv(str_c(dir_output_m, fn_stem_m, '_aov.csv'))
+stats_hsd_m  %>% write_csv(str_c(dir_output_m, fn_stem_m, '_aov_hsd.csv'))
+```
+
+---

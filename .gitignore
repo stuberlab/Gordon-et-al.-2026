@@ -1,0 +1,48 @@
+# Archive and temp directories (local use only)
+archive/
+
+# Windows shell metadata
+desktop.ini
+
+# RStudio local session state
+.Rproj.user/
+.Rhistory
+.RData
+
+# Data directory — ignore all contents; top-level subdir stubs tracked via .gitkeep
+data/**
+!data/
+!data/*/
+!data/*/.gitkeep
+
+# analysis_and_plots — ignore figure output subdirs (created at runtime by scripts)
+analysis_and_plots/fig*/
+analysis_and_plots/sfig*/
+
+# Python cache
+functions/__pycache__/
+
+# Local audit notes (not part of the tracked repo)
+functions/notes/
+
+# Temp editor files
+*.tmp.*
+*.tmp
+
+# RStudio project file and local working notes (not for publication)
+*.Rproj
+CLAUDE_context_*.txt
+README_LOCAL.md
+figure_mapping.csv
+CLAUDE_instructions_for_zenodo_repository.md
+CLAUDE_final_audit.html
+
+# Accidental nested directory
+analysis_and_plots/analysis_and_plots/
+
+# Scratch files
+logs_and_keys/TEMP_log_keys_for_claude.csv
+logs_and_keys/key_local_directories.R
+logs_and_keys/temp_*.Rmd
+logs_and_keys/temp_trimmed_*.csv
+logs_and_keys/raw/

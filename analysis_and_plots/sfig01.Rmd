@@ -1,0 +1,745 @@
+---
+title: "sfig01"
+author: "adam gordon-fennell"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = normalizePath('../'))
+```
+
+# setup
+## libraries
+```{r}
+library(tidyverse)
+library(afex)
+library(emmeans)
+library(janitor)
+library(readxl)
+library(ggh4x)
+library(arrow)
+library(zoo)
+library(lubridate)
+library(patchwork)
+library(ggbeeswarm)
+library(ggpubr)
+library(pals)
+library(boot)
+library(corrplot)
+library(Hmisc)
+library(viridis)
+
+arrow::set_cpu_count(4)
+
+source('./functions/params.R')
+source('./functions/theme.R')
+source('./functions/general.R')
+source('./functions/r_general.R')
+source('./functions/r_plots.R')
+source('./functions/stats.R')
+source('./functions/pca.R')
+source('./functions/analysis_peth.R')
+source('./functions/plotting_placements.R')
+```
+
+## directories
+```{r}
+dir_output          <- './analysis_and_plots/sfig01/'
+dir_data_sfig01     <- './data/sfig01/'
+dir_output_pre      <- str_c(dir_output, 'pre/')
+
+dir.create(dir_output,      recursive = TRUE, showWarnings = FALSE)
+dir.create(dir_output_pre,  recursive = TRUE, showWarnings = FALSE)
+```
+
+## logs / keys
+```{r}
+log_analysis_subjects <- read_xlsx('./logs_and_keys/log_data_analysis.xlsx', sheet = 'subjects',    na = c('NA', ''))
+log_analysis_fp       <- read_xlsx('./logs_and_keys/log_data_analysis.xlsx', sheet = 'fp',          na = c('NA', ''))
+log_analysis_exp      <- read_xlsx('./logs_and_keys/log_data_analysis.xlsx', sheet = 'experiments', na = c('NA', ''))
+log_placements        <- read.csv('./logs_and_keys/log_fiber_placements.csv', na.strings = c('', 'NA'))
+```
+
+## local functions
+```{r}
+color_values_channels      <- c('#72BF45', '#CD202A', '#7B8137')  # gaba / glut / ratio — panels I, J
+color_values_experiment_set <- c('#7edb00', '#007edb', '#db007e') # frsuc / wrsuc / wrnacl — panel K
+
+filter_subjects_lha <- function(df) {
+  df %>%
+    { if (!'experiment' %in% names(.)) mutate(., experiment = substr(subject, 1, 3)) else . } %>%
+    filter(experiment %in% c('aaw', 'acr')) %>%
+    filter(!subject %in% c('acr03', 'acr04')) %>%
+    filter(!subject %in% c('aaw02', 'aaw07', 'aaw21', 'acr09', 'acr10')) %>%
+    filter(!subject %in% c('aaw12'))
+}
+```
+
+---
+
+# initial preprocessing steps
+
+## NPM crosstalk (panels B / C / D)
+```{r eval=FALSE}
+# requires: NPM session feathers (streams_session.feather), log_npm, subject_ids (acq experiment folder)
+# output:   data/sfig01/s01bc_trace.csv (panels B + C), data/sfig01/s01d_trace.csv (panel D)
+#
+# import_fns <- log_npm %>%
+#   filter(procedure %>% str_detect('crosstalk')) %>%
+#   filter(experiment %in% manual_experiments) %>%
+#   pull(blockname) %>%
+#   unique()
+# data_list <- combined_import(import_directory = dir_npm_processed,
+#                              filter_strings = import_fns, prefixes = NA,
+#                              suffixes = c('streams_session.feather'), verbose = 0)
+# streams <- data_list[[1]] %>% ungroup()
+# streams <- streams %>% mutate(subject = blockname %>% str_sub(12, 16))
+# streams <- streams %>% left_join(log_npm %>% select(session_name, procedure) %>% unique())
+# streams <- streams %>%
+#   group_by(session_name) %>%
+#   mutate(time = time - min(time)) %>%
+#   filter(time <= 120) %>%
+#   mutate(time = time / 60)
+# streams <- streams %>% left_join(log_npm %>% select(blockname, branch_id, region))
+# streams <- streams %>%
+#   mutate(config = case_when(
+#     blockname %>% str_detect('config01') ~ 'config01',
+#     blockname %>% str_detect('config02') ~ 'config02'
+#   )) %>%
+#   get_hemisphere_npm(log_npm) %>%
+#   left_join(subject_ids %>% mutate(signal_wavelength = case_when(
+#     signal_wavelength == '465' ~ '470',
+#     signal_wavelength == '560' ~ '560'
+#   ))) %>%
+#   mutate(channel_id_facet = ifelse(channel_id == 'null', 'off target', 'on target')) %>%
+#   mutate(channel_id_facet = factor(channel_id_facet, levels = c('on target', 'off target'))) %>%
+#   group_by(blockname, branch_id, signal_wavelength) %>%
+#   mutate(signal_blsub = signal - mean(signal)) %>%
+#   ungroup()
+# tt <- streams %>% filter(subject == 'acq01') %>% filter(branch_id == 4)
+# tt %>% write_csv(str_c(dir_data_sfig01, 's01bc_trace.csv'))
+# plt_data <- streams %>% ungroup() %>%
+#   select(subject, blockname, branch_id, signal_wavelength, channel_id_facet, signal_blsub)
+# plt_data %>% write_csv(str_c(dir_data_sfig01, 's01d_trace.csv'))
+```
+
+## TDT crosstalk (panels F / G / H)
+```{r eval=FALSE}
+# requires: TDT session feathers (streams_session.feather), log_fp (acq experiment folder)
+# output:   data/sfig01/s01fg_trace.csv (panels F + G), data/sfig01/s01h_trace.csv (panel H)
+#
+# import_fns <- log_fp %>%
+#   filter(experiment %in% manual_experiments) %>%
+#   filter(procedure == 'crosstalk') %>%
+#   pull(blockname) %>%
+#   unique()
+# import_fns <- import_fns %>% keep(~ str_ends(.x, '_405'))
+# data_list <- combined_import(import_directory = dir_processed,
+#                              filter_strings = import_fns, prefixes = NA,
+#                              suffixes = c('streams_session.feather'), verbose = 0)
+# streams <- data_list[[1]] %>% ungroup()
+# streams <- streams %>% mutate(subject = blockname %>% str_sub(12, 16))
+# streams <- streams %>%
+#   group_by(blockname) %>%
+#   mutate(time = time - min(time)) %>%
+#   filter(time <= 120) %>%
+#   mutate(time = time / 60)
+# streams <- streams %>%
+#   select(subject, blockname, fiber_id, signal_wavelength, time, signal) %>%
+#   mutate(signal_id = case_when(signal_wavelength == 465 ~ 'LHA:GABA', signal_wavelength == 560 ~ 'LHA:Glut')) %>%
+#   group_by(blockname, fiber_id, signal_wavelength) %>%
+#   mutate(signal_blsub = signal - mean(signal)) %>%
+#   ungroup() %>%
+#   mutate(config = case_when(
+#     blockname %>% str_ends('_405')         ~ '405',
+#     blockname %>% str_ends('_405_465')     ~ '405 + 465',
+#     blockname %>% str_ends('_405_560')     ~ '405 + 560',
+#     blockname %>% str_ends('_405_465_560') ~ '405 + 465 + 560'
+#   )) %>%
+#   mutate(config = factor(config, levels = c('405', '405 + 465', '405 + 560', '405 + 465 + 560'))) %>%
+#   get_channel_ids() %>%
+#   mutate(channel_id_facet = ifelse(channel_id == 'null', 'off target', 'on target')) %>%
+#   mutate(channel_id_facet = factor(channel_id_facet, levels = c('on target', 'off target')))
+# tt <- streams %>% filter(subject == 'acq04') %>% filter(fiber_id == 1)
+# tt %>% write_csv(str_c(dir_data_sfig01, 's01fg_trace.csv'))
+# plt_data <- streams %>% ungroup() %>%
+#   select(subject, blockname, config, fiber_id, signal_wavelength, channel_id_facet, signal_blsub) %>%
+#   filter(config %in% c('405 + 465', '405 + 560'))
+# plt_data %>% write_csv(str_c(dir_data_sfig01, 's01h_trace.csv'))
+```
+
+## PETH on/off target (panel E)
+```{r eval=FALSE}
+# requires: acq NPM PETH feathers, arduino processed data (acq experiment folder)
+# output:   data/sfig01/s01e_peth.csv
+#
+# data <- acq_streams_peth %>%
+#   ungroup() %>%
+#   filter(event_id_char == 'access_period') %>%
+#   group_by(blockname) %>%
+#   mutate(max_event_number = max(event_number)) %>%
+#   mutate(event_number = ifelse(max_event_number > 100, event_number - 1, event_number)) %>%
+#   filter(event_number != 0 & event_number <= 100) %>%
+#   select(-max_event_number) %>%
+#   rename(trial_num = event_number) %>%
+#   left_join(join_data_trial_summary) %>%
+#   filter(!is.na(solution))
+# data <- data %>%
+#   filter(time_rel >= -3, time_rel < 0) %>%
+#   group_by(blockname, signal_wavelength, event_id_char, trial_num, hemisphere) %>%
+#   summarise(bl_signal_mean = mean(signal)) %>%
+#   left_join(data, ., by = c('blockname', 'signal_wavelength', 'hemisphere', 'event_id_char', 'trial_num')) %>%
+#   mutate(signal_bl_sub = signal - bl_signal_mean)
+# plt_data <- data %>%
+#   filter(procedure == 'multi_nacl') %>%
+#   mutate(channel_id_facet = ifelse(channel_id == 'null', 'off target', 'on target')) %>%
+#   mutate(channel_id_facet = factor(channel_id_facet, levels = c('on target', 'off target'))) %>%
+#   filter(time_rel > -3, time_rel < 6)
+# plt_data %>% write_csv(str_c(dir_data_sfig01, 's01e_peth.csv'))
+```
+
+## Baseline rep traces (panel I)
+```{r eval=FALSE}
+# requires: TDT session streams — acq_streams (acq experiment folder)
+# output:   data/sfig01/s01i_rep_trace.csv
+#
+# acq_streams_bl <- acq_streams %>%
+#   select(subject, blockname, time, delta_signal_poly, channel_id, signal_wavelength, hemisphere, virus) %>%
+#   group_by(blockname) %>%
+#   mutate(time = time - min(time)) %>%
+#   filter(channel_id != 'null') %>%
+#   filter(time >= 10) %>%
+#   filter(time <= 10 + 120) %>%
+#   group_by(blockname, subject, channel_id, hemisphere, virus, signal_wavelength) %>%
+#   mutate(delta_signal_poly_bl_zscore = (delta_signal_poly - mean(delta_signal_poly)) / sd(delta_signal_poly)) %>%
+#   ungroup()
+# blocknames_to_include <- c('2025_08_30_acq01', '2025_08_30_acq02', '2025_08_30_acq03', '2025_08_30_acq04')
+# acq_streams_bl %>%
+#   filter(blockname %in% blocknames_to_include) %>%
+#   write_csv(str_c(dir_data_sfig01, 's01i_rep_trace.csv'))
+```
+
+## Baseline cross-correlation (panel J)
+```{r eval=FALSE}
+# requires: TDT session streams — acq_streams_bl (acq experiment folder, see panel I preprocessing)
+#           log_data (acq experiment folder) with blockname, procedure, deprivation columns
+# output:   data/sfig01/s01j_baseline_streams.csv
+#           NOTE: log join and set_id filter are applied BEFORE export so the CSV is
+#           pre-filtered (only frsuc/wrsuc/wrnacl rows); spread() is done in the plot chunk.
+#
+# plt_data_baseline <- acq_streams_bl %>%
+#   left_join(log_data %>% select(blockname, procedure, deprivation)) %>%
+#   get_set_id() %>%
+#   filter(set_id %in% c('frsuc', 'wrsuc', 'wrnacl')) %>%
+#   select(subject, blockname, time, channel_id, delta_signal_poly_bl_zscore)
+# plt_data_baseline %>% write_csv(str_c(dir_data_sfig01, 's01j_baseline_streams.csv'))
+
+# ── LHA GABA/Glut baseline cross-correlation, by set_id ────────────────────────
+# requires: data/sessions/<blockname>/<blockname>_streams_baseline_preprocessed.feather
+#           (all sessions with an LHA recording)
+# output:   sfig01/pre/lha_baseline_cor_setid_data.csv
+# log_analysis_fp_lha <- log_analysis_fp %>%
+#   get_set_id() %>%
+#   filter(set_id %in% c('frsuc', 'wrsuc', 'wrnacl')) %>%
+#   filter_subjects_lha()
+# 
+# manual_blocknames_lha <- log_analysis_fp_lha %>% pull(blockname)
+# 
+# file_paths_bl <- list.files('./data/sessions/',
+#                             pattern    = '_streams_baseline_preprocessed.feather',
+#                             recursive  = TRUE, full.names = TRUE) %>%
+#   keep(~ str_detect(.x, str_c(manual_blocknames_lha, collapse = '|')))
+# 
+# df_bl_combined <- file_paths_bl %>%
+#   lapply(function(fp) {
+#     read_feather(fp) %>%
+#       filter(region %>% str_detect('lha')) %>%
+#       select(blockname, region, time, zscore) %>%
+#       ungroup()
+#   }) %>%
+#   bind_rows()
+# 
+# plt_data_baseline_setid <- df_bl_combined %>%
+#   left_join(log_analysis_fp_lha %>% select(blockname, subject, set_id), by = 'blockname') %>%
+#   select(subject, set_id, blockname, time, region, zscore)
+# 
+# plt_data_baseline_setid %>%
+#   write_csv(str_c(dir_output_pre, 'lha_baseline_cor_setid_data.csv'))
+```
+
+
+
+
+## LHA PETH correlation, baseline subtracted (panel K)
+```{r eval=FALSE}
+# requires: data/sessions/*_streams_peth_preprocessed.feather (panel K)
+# output:   sfig01/pre/peth_corblsub_data.csv
+#           sfig01/pre/peth_corblsub_summary_data.csv
+
+toggle_process <- 0  # 1 = compute and save  |  0 = read saved CSVs
+
+if (toggle_process == 1) {
+
+  log_analysis_fp_lha <- log_analysis_fp %>%
+    get_set_id() %>%
+    filter(set_id %in% c('frsuc', 'wrsuc', 'wrnacl')) %>%
+    filter_subjects_lha()
+  sbj_sets <- log_analysis_fp_lha %>%
+    select(subject, set_id) %>%
+    unique()
+
+  file_paths_peth <- list.files('./data/sessions/',
+                                pattern   = '_streams_peth_preprocessed.feather',
+                                recursive = TRUE, full.names = TRUE)
+
+  df_cor_list <- list()
+
+  for (n_loop in seq_len(nrow(sbj_sets))) {
+    manual_blocknames <- log_analysis_fp_lha %>%
+      filter(subject == sbj_sets$subject[n_loop], set_id == sbj_sets$set_id[n_loop]) %>%
+      pull(blockname)
+
+    file_paths_sbj_set <- file_paths_peth %>%
+      keep(~ str_detect(.x, str_c(manual_blocknames, collapse = '|')))
+
+    df_combined <- file_paths_sbj_set %>%
+      lapply(function(fp) {
+        read_feather(fp) %>%
+          filter(region %in% c('lha_gaba', 'lha_glut')) %>%
+          filter(event_id_char %in% c('access_period', 'spout_extended')) %>%
+          filter(time_rel > -3, time_rel <= 9) %>%
+          select(blockname, region, trial_num = event_number, time_rel, zscore) %>%
+          ungroup()
+      }) %>%
+      bind_rows()
+
+    df_cor <- df_combined %>%
+      spread(region, zscore) %>%
+      tidy_cor('lha_gaba', 'lha_glut', 'time_rel') %>%
+      mutate(subject = sbj_sets$subject[n_loop], set_id = sbj_sets$set_id[n_loop])
+
+    df_cor_list[[n_loop]] <- df_cor
+    message('[', n_loop, '/', nrow(sbj_sets), '] ', sbj_sets$subject[n_loop], ' x ', sbj_sets$set_id[n_loop])
+  }
+
+  df_cor_combined <- df_cor_list %>% bind_rows()
+
+  df_cor_combined <- df_cor_combined %>%
+    filter(time_rel >= -3, time_rel < 0) %>%
+    group_by(subject, set_id) %>%
+    summarise(estimate_blmean = mean(estimate), .groups = 'drop') %>%
+    left_join(df_cor_combined, .) %>%
+    mutate(estimate_blsub = estimate - estimate_blmean)
+
+  df_cor_combined_summary <- df_cor_combined %>%
+    filter(time_rel >= 2, time_rel <= 3) %>%
+    group_by(subject, set_id) %>%
+    summarise(
+      estimate_blsub = mean(estimate_blsub),
+      estimate       = mean(estimate),
+      .groups = 'drop'
+    ) %>%
+    mutate(set_id = factor(set_id, levels = c('frsuc', 'wrsuc', 'wrnacl')))
+
+  df_cor_combined         %>% write_csv(str_c(dir_output_pre, 'peth_corblsub_data.csv'))
+  df_cor_combined_summary %>% write_csv(str_c(dir_output_pre, 'peth_corblsub_summary_data.csv'))
+
+} else {
+  message('toggle_process = 0: preprocessing CSVs will be read by each section')
+}
+```
+
+---
+
+## sfig01b: NPM representative trace (raw AU) — acq01
+```{r eval=FALSE}
+dir_output_b <- str_c(dir_output, 'b/')
+dir.create(dir_output_b, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_b <- 'npm_trace_raw'
+
+plt_data_b <- read.csv(str_c(dir_data_sfig01, 's01bc_trace.csv')) %>%
+  mutate(channel_id_facet = factor(channel_id_facet, levels = c('on target', 'off target'))) %>%
+  mutate(signal_wavelength = as.character(signal_wavelength))
+```
+
+```{r eval=FALSE}
+plt_data_b %>%
+  ggplot(aes(time, signal,
+             color    = signal_wavelength,
+             linetype = channel_id_facet,
+             group    = interaction(signal_wavelength, channel_id_facet, branch_id))) +
+  geom_line() +
+  facet_grid(subject ~ hemisphere, scales = 'free') +
+  scale_color_manual(values = color_values_regions) +
+  ylab('Raw arbitrary units') +
+  xlab('Time (min)') +
+  coord_cartesian(xlim = c(0, 2), ylim = c(0, 0.04), expand = FALSE) +
+  scale_x_continuous(breaks = c(0, 1)) +
+  theme_ag01() +
+  force_panelsizes(rows = unit(3, 'cm'), cols = unit(1, 'cm'))
+
+save_pdf(dir_output_b, str_c(fn_stem_b, '.pdf'), 6, 3)
+plt_data_b %>% write_csv(str_c(dir_output_b, fn_stem_b, '_data.csv'))
+```
+
+---
+
+## sfig01c: NPM representative trace (baseline subtracted) — acq01
+```{r eval=FALSE}
+dir_output_c <- str_c(dir_output, 'c/')
+dir.create(dir_output_c, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_c <- 'npm_trace_blsub'
+
+plt_data_c <- read.csv(str_c(dir_data_sfig01, 's01bc_trace.csv')) %>%
+  mutate(channel_id_facet = factor(channel_id_facet, levels = c('on target', 'off target'))) %>%
+  mutate(signal_wavelength = as.character(signal_wavelength))
+```
+
+```{r eval=FALSE}
+plt_data_c %>%
+  ggplot(aes(time, signal_blsub,
+             color    = signal_wavelength,
+             linetype = channel_id_facet,
+             group    = interaction(signal_wavelength, blockname, branch_id))) +
+  geom_line() +
+  facet_grid(signal_wavelength ~ ., scales = 'free') +
+  scale_color_manual(values = color_values_regions) +
+  ylab('Baseline subtracted\narbitrary units') +
+  xlab('Time (min)') +
+  scale_x_continuous(breaks = c(0, 1)) +
+  theme_ag01() +
+  force_panelsizes(rows = unit(1, 'cm'), cols = unit(1, 'cm'))
+
+save_pdf(dir_output_c, str_c(fn_stem_c, '.pdf'), 6, 3)
+plt_data_c %>% write_csv(str_c(dir_output_c, fn_stem_c, '_data.csv'))
+```
+
+---
+
+## sfig01d: NPM on/off target variance
+```{r eval=FALSE}
+dir_output_d <- str_c(dir_output, 'd/')
+dir.create(dir_output_d, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_d <- 'npm_offtarget_variance'
+
+plt_data_d <- read.csv(str_c(dir_data_sfig01, 's01d_trace.csv')) %>%
+  mutate(channel_id_facet = factor(channel_id_facet, levels = c('on target', 'off target'))) %>%
+  mutate(signal_wavelength = as.character(signal_wavelength))
+```
+
+```{r eval=FALSE}
+plt_data_d_summary <- plt_data_d %>%
+  group_by(subject, signal_wavelength, channel_id_facet, branch_id) %>%
+  summarise(signal_variance = var(signal_blsub), .groups = 'drop') %>%
+  spread(channel_id_facet, signal_variance) %>%
+  mutate(prop_offtarget_variance = `off target` / (`on target` + `off target`)) %>%
+  group_by(subject, signal_wavelength) %>%
+  summarise(
+    `on target`             = mean(`on target`),
+    `off target`            = mean(`off target`),
+    prop_offtarget_variance = mean(prop_offtarget_variance),
+    .groups = 'drop'
+  )
+
+plt_data_d_summary %>%
+  ggplot(aes(signal_wavelength, prop_offtarget_variance, color = signal_wavelength)) +
+  geom_quasirandom(width = 0.1) +
+  coord_cartesian(xlim = c(0.5, 2.5), ylim = c(0, 1), expand = 0, clip = 'off') +
+  scale_color_manual(values = color_values_regions) +
+  ylab('Off target variance\n/ total variance') +
+  theme_ag01() +
+  force_panelsizes(rows = unit(3, 'cm'), cols = unit(1, 'cm'))
+
+save_pdf(dir_output_d, str_c(fn_stem_d, '.pdf'), 6, 3)
+plt_data_d_summary %>% write_csv(str_c(dir_output_d, fn_stem_d, '_data.csv'))
+```
+
+---
+
+## sfig01e: NPM PETH on/off target — access-aligned, baseline subtracted
+```{r eval=FALSE}
+dir_output_e <- str_c(dir_output, 'e/')
+dir.create(dir_output_e, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_e <- 'npm_peth_ontarget_offtarget'
+
+plt_data_e <- read.csv(str_c(dir_data_sfig01, 's01e_peth.csv')) %>%
+  mutate(channel_id_facet = factor(channel_id_facet, levels = c('on target', 'off target')))
+```
+
+```{r eval=FALSE}
+plt_data_e %>%
+  ggplot(aes(time_rel, signal_bl_sub,
+             color = solution, fill = solution,
+             group = interaction(solution))) +
+  annotate('rect', xmin = 0, xmax = 3, ymin = -Inf, ymax = Inf, alpha = 1/3, fill = 'darkgrey') +
+  stat_summary(fun.data = 'mean_se', geom = 'ribbon', color = NA, alpha = 1/3) +
+  stat_summary(fun = 'mean', geom = 'line') +
+  scale_color_viridis_d(option = 'inferno', end = 0.9) +
+  scale_fill_viridis_d(option  = 'inferno', end = 0.9) +
+  facet_grid(signal_wavelength ~ channel_id_facet, scales = 'free') +
+  xlab('Time (s)') +
+  ylab('AU baseline subtracted') +
+  theme_ag01() +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(2, 'cm'))
+
+save_pdf(dir_output_e, str_c(fn_stem_e, '.pdf'), 6, 6)
+plt_data_e %>% write_csv(str_c(dir_output_e, fn_stem_e, '_data.csv'))
+```
+
+---
+
+## sfig01f: TDT representative trace (raw AU) — acq04
+```{r eval=FALSE}
+dir_output_f <- str_c(dir_output, 'f/')
+dir.create(dir_output_f, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_f <- 'tdt_trace_raw'
+
+plt_data_f <- read.csv(str_c(dir_data_sfig01, 's01fg_trace.csv')) %>%
+  mutate(channel_id_facet = factor(channel_id_facet, levels = c('on target', 'off target'))) %>%
+  mutate(config = factor(config, levels = c('405', '405 + 465', '405 + 560', '405 + 465 + 560'))) %>%
+  mutate(signal_wavelength = as.character(signal_wavelength))
+```
+
+```{r eval=FALSE}
+plt_data_f %>%
+  ggplot(aes(time, signal,
+             color    = signal_wavelength,
+             linetype = channel_id_facet,
+             group    = interaction(signal_wavelength, blockname, fiber_id))) +
+  geom_line() +
+  facet_grid(. ~ config, scales = 'free') +
+  scale_color_manual(values = color_values_regions) +
+  ylab('Raw arbitrary units') +
+  xlab('Time (min)') +
+  coord_cartesian(xlim = c(0, 2), ylim = c(0, 1000), expand = FALSE) +
+  scale_x_continuous(breaks = c(0, 1)) +
+  theme_ag01() +
+  force_panelsizes(rows = unit(3, 'cm'), cols = unit(1, 'cm'))
+
+save_pdf(dir_output_f, str_c(fn_stem_f, '.pdf'), 6, 3)
+plt_data_f %>% write_csv(str_c(dir_output_f, fn_stem_f, '_data.csv'))
+```
+
+---
+
+## sfig01g: TDT representative trace (baseline subtracted) — acq04
+```{r eval=FALSE}
+dir_output_g <- str_c(dir_output, 'g/')
+dir.create(dir_output_g, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_g <- 'tdt_trace_blsub'
+
+plt_data_g <- read.csv(str_c(dir_data_sfig01, 's01fg_trace.csv')) %>%
+  mutate(channel_id_facet = factor(channel_id_facet, levels = c('on target', 'off target'))) %>%
+  mutate(config = factor(config, levels = c('405', '405 + 465', '405 + 560', '405 + 465 + 560'))) %>%
+  mutate(signal_wavelength = as.character(signal_wavelength))
+```
+
+```{r eval=FALSE}
+plt_data_g %>%
+  ggplot(aes(time, signal_blsub,
+             color    = signal_wavelength,
+             linetype = channel_id_facet,
+             group    = interaction(signal_wavelength, blockname, fiber_id))) +
+  geom_line() +
+  facet_grid(signal_wavelength ~ config, scales = 'free') +
+  scale_color_manual(values = color_values_regions) +
+  ylab('Baseline subtracted\narbitrary units') +
+  xlab('Time (min)') +
+  scale_x_continuous(breaks = c(0, 1)) +
+  theme_ag01() +
+  force_panelsizes(rows = unit(1, 'cm'), cols = unit(1, 'cm'))
+
+save_pdf(dir_output_g, str_c(fn_stem_g, '.pdf'), 6, 3)
+plt_data_g %>% write_csv(str_c(dir_output_g, fn_stem_g, '_data.csv'))
+```
+
+---
+
+## sfig01h: TDT on/off target variance
+```{r eval=FALSE}
+dir_output_h <- str_c(dir_output, 'h/')
+dir.create(dir_output_h, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_h <- 'tdt_offtarget_variance'
+
+plt_data_h <- read.csv(str_c(dir_data_sfig01, 's01h_trace.csv')) %>%
+  mutate(channel_id_facet = factor(channel_id_facet, levels = c('on target', 'off target'))) %>%
+  mutate(config = factor(config, levels = c('405', '405 + 465', '405 + 560', '405 + 465 + 560'))) %>%
+  mutate(signal_wavelength = as.character(signal_wavelength))
+```
+
+```{r eval=FALSE}
+plt_data_h_summary <- plt_data_h %>%
+  group_by(subject, signal_wavelength, channel_id_facet, fiber_id) %>%
+  summarise(signal_variance = var(signal_blsub), .groups = 'drop') %>%
+  spread(channel_id_facet, signal_variance) %>%
+  mutate(prop_offtarget_variance = `off target` / (`on target` + `off target`)) %>%
+  group_by(subject, signal_wavelength) %>%
+  summarise(
+    `on target`             = mean(`on target`),
+    `off target`            = mean(`off target`),
+    prop_offtarget_variance = mean(prop_offtarget_variance),
+    .groups = 'drop'
+  )
+
+plt_data_h_summary %>%
+  ggplot(aes(signal_wavelength, prop_offtarget_variance, color = signal_wavelength)) +
+  geom_quasirandom(width = 0.1) +
+  coord_cartesian(xlim = c(0.5, 2.5), ylim = c(0, 1), expand = 0, clip = 'off') +
+  scale_color_manual(values = color_values_regions) +
+  ylab('Off target variance\n/ total variance') +
+  theme_ag01() +
+  force_panelsizes(rows = unit(3, 'cm'), cols = unit(1, 'cm'))
+
+save_pdf(dir_output_h, str_c(fn_stem_h, '.pdf'), 6, 3)
+plt_data_h_summary %>% write_csv(str_c(dir_output_h, fn_stem_h, '_data.csv'))
+```
+
+---
+
+## sfig01i: TDT baseline rep trace — acq01–04
+```{r eval=FALSE}
+dir_output_i <- str_c(dir_output, 'i/')
+dir.create(dir_output_i, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_i <- 'baseline_cor_reptraces'
+
+plt_data_i <- read.csv(str_c(dir_data_sfig01, 's01i_rep_trace.csv'))
+```
+
+```{r eval=FALSE}
+plt <- plt_data_i %>%
+  ggplot(aes(time, delta_signal_poly_bl_zscore, color = channel_id)) +
+  geom_line(aes(group = interaction(blockname, hemisphere, virus))) +
+  facet_grid(subject ~ .) +
+  scale_color_manual(values = color_values_channels) +
+  theme_ag01()
+
+plt %>%
+  add_scale_bar(c(10, -2), 10, 1) +
+  force_panelsizes(rows = unit(1, 'cm'), cols = unit(6, 'cm'))
+
+save_pdf(dir_output_i, str_c(fn_stem_i, '.pdf'), 6, 6)
+plt_data_i %>% write_csv(str_c(dir_output_i, fn_stem_i, '_data.csv'))
+```
+
+---
+
+## sfig01j: TDT GABA x Glut baseline cross-correlation
+```{r eval=FALSE}
+dir_output_j <- str_c(dir_output, 'j/')
+dir.create(dir_output_j, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_j <- 'baseline_cor_ccf'
+
+plt_data_j <- read.csv(str_c(dir_data_sfig01, 's01j_baseline_streams.csv')) %>%
+  spread(channel_id, delta_signal_poly_bl_zscore) %>%
+  tidy_cross_correlation('gaba', 'glut', 120, 'subject') %>%
+  mutate(lag = lag / 20)
+
+
+plt_data_j_right <-  read.csv(str_c(dir_output_pre, 'lha_baseline_cor_setid_data.csv')) %>%
+  filter(set_id %in% c('frsuc', 'wrsuc', 'wrnacl')) %>%
+  spread(region, zscore) %>%
+  mutate(restriction = set_id %>% str_sub(1,2)) %>%
+  tidy_cross_correlation('lha_gaba', 'lha_glut', 120, 'subject', 'restriction') %>%
+  mutate(lag = lag / 20)
+
+```
+
+```{r eval=FALSE}
+plt_data_j %>%
+  ggplot(aes(lag, acf)) +
+  geom_hline(yintercept = 0, linewidth = 0.5, color = 'darkgrey') +
+  geom_vline(xintercept = 0, linewidth = 0.5, color = 'darkgrey') +
+  geom_line(aes(group = subject), alpha = 1/3) +
+  coord_cartesian(ylim = c(-0.5, 1), xlim = c(-6, 6), expand = FALSE) +
+  xlab('Lag (s)') +
+  ylab('Cross-correlation coefficient') +
+  theme_ag01() +
+  force_panelsizes(rows = unit(3, 'cm'), cols = unit(3, 'cm'))
+
+save_pdf(dir_output_j, str_c(fn_stem_j, '.pdf'), 6, 6)
+plt_data_j %>% write_csv(str_c(dir_output_j, fn_stem_j, '_data.csv'))
+```
+
+
+```{r eval=FALSE}
+plt_data_j_right %>%
+  ggplot(aes(lag, acf, color = restriction, fill = restriction, group = restriction)) +
+  geom_hline(yintercept = 0, linewidth = 0.5, color = 'darkgrey') +
+  geom_vline(xintercept = 0, linewidth = 0.5, color = 'darkgrey') +
+  stat_summary(fun.data = 'mean_se', geom = 'ribbon', alpha = 1/3, color = NA) +
+  stat_summary(fun = 'mean', geom = 'line') +
+  coord_cartesian(ylim = c(-0.5, 1), xlim = c(-6, 6), expand = FALSE) +
+  xlab('Lag (s)') +
+  ylab('Cross-correlation coefficient') +
+  theme_ag01() +
+  force_panelsizes(rows = unit(3, 'cm'), cols = unit(3, 'cm'))
+
+save_pdf(dir_output_j, str_c(fn_stem_j, '_restriction.pdf'), 6, 6)
+plt_data_j_right %>% write_csv(str_c(dir_output_j, fn_stem_j, '_restriction_data.csv'))
+```
+
+
+---
+
+## sfig01k: LHA GABA×Glut PETH correlation — baseline subtracted
+```{r eval=FALSE}
+dir_output_k <- str_c(dir_output, 'k/')
+dir.create(dir_output_k, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_k <- 'peth_corblsub'
+
+plt_data_k <- read.csv(str_c(dir_output_pre, 'peth_corblsub_data.csv')) %>%
+  mutate(set_id = factor(set_id, levels = c('frsuc', 'wrsuc', 'wrnacl')))
+
+plt_data_k_summary <- read.csv(str_c(dir_output_pre, 'peth_corblsub_summary_data.csv')) %>%
+  mutate(set_id = factor(set_id, levels = c('frsuc', 'wrsuc', 'wrnacl')))
+```
+
+```{r eval=FALSE}
+plt_data_k %>%
+  ggplot(aes(time_rel, estimate_blsub, color = set_id, fill = set_id, group = set_id)) +
+  annotate('rect', xmin = 0, xmax = 3, ymin = -Inf, ymax = Inf, alpha = 1/3, fill = 'darkgrey') +
+  stat_summary(fun = 'mean', geom = 'line') +
+  stat_summary(fun.data = 'mean_se', geom = 'ribbon', alpha = 1/3, color = NA) +
+  scale_color_manual(values = color_values_experiment_set) +
+  scale_fill_manual(values = color_values_experiment_set) +
+  ylab('Delta R') +
+  xlab('Time (s)') +
+  coord_cartesian(xlim = c(-3, 9), ylim = c(-0.4, 0.2), expand = FALSE) +
+  scale_y_continuous(breaks = seq(-0.4, 0.2, 0.2)) +
+  theme_ag01() +
+  force_panelsizes(cols = unit(5, 'cm'), rows = unit(5, 'cm'))
+
+save_pdf(dir_output_k, str_c(fn_stem_k, '.pdf'), 5, 5)
+plt_data_k %>% write_csv(str_c(dir_output_k, fn_stem_k, '_data.csv'))
+```
+
+```{r eval=FALSE}
+plt_data_k_summary %>%
+  ggplot(aes(set_id, estimate_blsub, group = 1)) +
+  geom_line(aes(group = subject), alpha = 1/3, size = 1/3) +
+  stat_summary(fun = 'mean', geom = 'line', aes(group = 1)) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0) +
+  ylab('Delta R') +
+  xlab('') +
+  coord_cartesian(xlim = c(0.5, 3.5), ylim = c(-1.5, 0.5), expand = FALSE) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  theme_ag01() +
+  force_panelsizes(cols = unit(8, 'mm'), rows = unit(32, 'mm'))
+
+plt_data_k_summary %>%
+  aov_rm_one_within(dir_output_k, str_c(fn_stem_k, '_summary'), 'subject', 'estimate_blsub', 'set_id')
+
+save_pdf(dir_output_k, str_c(fn_stem_k, '_summary.pdf'), 5, 5)
+plt_data_k_summary %>% write_csv(str_c(dir_output_k, fn_stem_k, '_summary_data.csv'))
+```

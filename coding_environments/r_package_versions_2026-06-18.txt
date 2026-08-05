@@ -1,0 +1,55 @@
+══════════════════════════════════════════════════════════════════════════════
+R ENVIRONMENT REPORT
+Generated: 2026-06-18 15:03:08
+══════════════════════════════════════════════════════════════════════════════
+
+── R version ─────────────────────────────────────────────────────────────────
+R version:  R version 4.3.3 (2024-02-29 ucrt)
+Platform:   x86_64-w64-mingw32
+OS:         Windows 10 x64
+Running on: DESKTOP-MJAUQT3
+
+── Packages ──────────────────────────────────────────────────────────────────
+Package                        Version         Repository   Built
+-------                        -------         ----------   -----
+afex                           1.3.1           CRAN         R 4.3.3; ; 2024-03-31 05:02:29 UTC; windows
+arrow                          15.0.1          CRAN         R 4.3.3; x86_64-w64-mingw32; 2024-03-31 03:09:17 UTC; windows
+boot                           1.3.29          CRAN         R 4.3.3; ; 2024-02-29 11:14:39 UTC; windows
+broom                          1.0.5           CRAN         R 4.3.3; ; 2024-03-31 04:03:18 UTC; windows
+corrplot                       0.92            CRAN         R 4.3.3; ; 2024-03-31 01:34:36 UTC; windows
+corrr                          0.4.4           CRAN         R 4.3.3; ; 2024-05-08 03:04:55 UTC; windows
+DescTools                      0.99.60         CRAN         R 4.3.3; x86_64-w64-mingw32; 2025-04-07 03:32:07 UTC; windows
+emmeans                        1.10.0          CRAN         R 4.3.3; ; 2024-03-31 02:11:58 UTC; windows
+factoextra                     1.0.7           CRAN         R 4.3.3; ; 2024-07-08 04:00:33 UTC; windows
+FactoMineR                     2.11            CRAN         R 4.3.3; x86_64-w64-mingw32; 2024-05-08 04:14:46 UTC; windows
+ggbeeswarm                     0.7.2           CRAN         R 4.3.3; ; 2024-03-31 03:43:47 UTC; windows
+ggcorrplot                     0.1.4.1         CRAN         R 4.3.3; ; 2024-05-08 02:38:24 UTC; windows
+ggh4x                          0.2.8           CRAN         R 4.3.3; ; 2024-03-31 03:21:16 UTC; windows
+ggpubr                         0.6.0           CRAN         R 4.3.3; ; 2024-03-31 05:05:16 UTC; windows
+googlesheets4                  1.1.1           CRAN         R 4.3.3; ; 2024-03-31 03:19:22 UTC; windows
+Hmisc                          5.1.2           CRAN         R 4.3.3; x86_64-w64-mingw32; 2024-04-02 02:58:32 UTC; windows
+janitor                        2.2.0           CRAN         R 4.3.3; ; 2024-03-31 03:44:24 UTC; windows
+lme4                           1.1.35.2        CRAN         R 4.3.3; x86_64-w64-mingw32; 2024-03-31 00:51:03 UTC; windows
+lmerTest                       3.1.3           CRAN         R 4.3.3; ; 2024-03-31 04:25:14 UTC; windows
+lubridate                      1.9.3           CRAN         R 4.3.3; x86_64-w64-mingw32; 2024-03-31 02:11:57 UTC; windows
+pals                           1.8             CRAN         R 4.3.3; ; 2024-03-31 02:22:40 UTC; windows
+patchwork                      1.2.0           CRAN         R 4.3.3; ; 2024-03-31 03:43:38 UTC; windows
+plotly                         4.10.4          CRAN         R 4.3.3; ; 2024-07-08 03:15:09 UTC; windows
+pracma                         2.4.4           CRAN         R 4.3.3; ; 2024-10-23 00:29:16 UTC; windows
+readxl                         1.4.3           CRAN         R 4.3.3; x86_64-w64-mingw32; 2024-03-31 03:43:40 UTC; windows
+rstatix                        0.7.2           CRAN         R 4.3.3; ; 2024-03-31 05:02:23 UTC; windows
+scales                         1.3.0           CRAN         R 4.3.3; ; 2024-03-31 02:35:49 UTC; windows
+tidyverse                      2.0.0           CRAN         R 4.3.3; ; 2024-03-31 04:50:57 UTC; windows
+viridis                        0.6.5           CRAN         R 4.3.3; ; 2024-03-31 03:43:40 UTC; windows
+viridisLite                    0.4.2           CRAN         R 4.3.3; ; 2024-03-31 01:34:21 UTC; windows
+zoo                            1.8.12          CRAN         R 4.3.3; x86_64-w64-mingw32; 2024-03-31 02:11:49 UTC; windows
+
+── Summary ───────────────────────────────────────────────────────────────────
+Rmd files scanned:  13
+Unique packages:    31
+Installed:          31
+Not installed:      0
+
+── Python environment ────────────────────────────────────────────────────────
+Python packages documented separately in: coding_environments/environment_base.yml
+══════════════════════════════════════════════════════════════════════════════

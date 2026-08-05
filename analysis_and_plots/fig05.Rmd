@@ -1,0 +1,808 @@
+---
+title: "fig05"
+author: "adam gordon-fennell"
+date: '2023-12-28'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# run all chunks from the project root so relative paths resolve correctly
+knitr::opts_knit$set(root.dir = normalizePath('../'))
+```
+
+# setup
+## libraries
+```{r}
+source('./logs_and_keys/key_local_directories.R')
+Sys.unsetenv("RETICULATE_PYTHON_FALLBACK")
+Sys.unsetenv("RETICULATE_PYTHON")
+reticulate::use_python(path_python, required = TRUE)
+
+library(tidyverse)
+library(afex)
+library(emmeans)
+library(janitor)
+library(readxl)
+library(ggh4x) # force_panelsizes
+library(arrow)
+library(zoo)
+library(lubridate)
+library(patchwork)
+library(ggbeeswarm)
+library(ggpubr) # r2 on correlation
+library(pals)
+library(boot)  # bootstrapping
+library(corrplot)
+library(Hmisc)
+library(plotly)
+
+arrow::set_cpu_count(4)
+
+source('./functions/params.R')
+source('./functions/theme.R')
+source('./functions/general.R')
+source('./functions/r_general.R')
+source('./functions/r_plots.R')
+source('./functions/stats.R')
+source('./functions/pca.R')
+source('./functions/analysis_peth.R')
+source('./functions/plotting_placements.R')
+```
+
+## directories
+```{r}
+dir_combined_setid <- './data/combined_setid/'
+dir_output         <- './analysis_and_plots/fig05/'
+
+dir.create(dir_output, recursive = TRUE, showWarnings = FALSE)
+```
+
+## logs / keys
+```{r}
+log_analysis_fp  <- read_xlsx('./logs_and_keys/log_data_analysis.xlsx', sheet = 'fp',          na = c('NA', ''))
+log_analysis_exp <- read_xlsx('./logs_and_keys/log_data_analysis.xlsx', sheet = 'experiments', na = c('NA', ''))
+log_placements   <- read.csv('./logs_and_keys/log_fiber_placements.csv', na.strings = c('', 'NA'))
+```
+
+# analysis / plotting
+## setup
+```{r}
+# helper used by all fp str sections — filters to striatum (non-LHA) regions
+filt_and_format_data <- function(df){
+  df %>%
+    filter(!region %>% str_detect('LHA')) %>%
+    filter(set_id %in% c('frsuc', 'wrsuc', 'wrnacl')) %>%
+    mutate(region = region %>% factor(levels = unique(key_regions$region_label))) %>%
+    format_set_id(key_set_id)
+}
+```
+
+
+## preprocessing
+# all raw data is loaded here once and saved to pre/
+# individual figure sections read only from pre/ — no cross-section dependencies
+```{r eval=FALSE}
+# ── setup ──────────────────────────────────────────────────────────────────────
+toggle_process <- 0   # 1 = load from dir_combined_setid and save  |  0 = CSVs already exist
+
+dir_output_pre <- str_c(dir_output, 'pre/')
+dir.create(dir_output_pre, recursive = TRUE, showWarnings = FALSE)
+```
+
+```{r eval=FALSE}
+if (toggle_process == 1) {
+
+  # ── 1. fp str trace (fig5d) ──────────────────────────────────────────────────
+  fns      <- list.files(dir_combined_setid)
+  fns_filt <- fns[fns %>% str_detect('filtlick')]
+  fns_filt <- fns_filt[fns_filt %>% str_detect('peth_summary_trace_overal')]
+  fns_filt <- fns_filt[fns_filt != 'filtlick_peth_summary_trace_overall.csv']
+  fns_filt <- fns_filt %>% str_remove('.csv')
+
+  combined_import(
+    import_directory = dir_combined_setid,
+    filter_strings = fns_filt, prefixes = NA, suffixes = c('.csv'), verbose = 0
+  )[[1]] %>%
+    filt_and_format_data() %>%
+    write_csv(str_c(dir_output_pre, 'fp_str_trace_data.csv'))
+
+  # ── 2. licking trace (fig5d) ─────────────────────────────────────────────────
+  fns      <- list.files(dir_combined_setid)
+  fns_filt <- fns[fns %>% str_detect('binnedlick_trace_overall')]
+  fns_filt <- fns_filt %>% str_remove('.csv')
+
+  combined_import(
+    import_directory = dir_combined_setid,
+    filter_strings = fns_filt, prefixes = NA, suffixes = c('.csv'), verbose = 0
+  )[[1]] %>%
+    mutate(region = 'dummy') %>%
+    filt_and_format_data() %>%
+    select(-region) %>%
+    write_csv(str_c(dir_output_pre, 'fp_str_licking_data.csv'))
+
+  # ── 3. fp str means — sustained + post (fig5h, fig5i, fig5k, fig5l) ─────────
+  fns      <- list.files(dir_combined_setid)
+  fns_filt <- fns[fns %>% str_detect('filtlick')]
+  fns_filt <- fns_filt[fns_filt %>% str_detect('peth_summary_means_subject')]
+  fns_filt <- fns_filt %>% str_remove('.csv')
+
+  df_means <- combined_import(
+    import_directory = dir_combined_setid,
+    filter_strings = fns_filt, prefixes = NA, suffixes = c('.csv'), verbose = 0
+  )[[1]] %>%
+    filt_and_format_data()
+
+  df_means %>% filter(time_bin == 'sustained') %>% write_csv(str_c(dir_output_pre, 'fp_str_sustained_data.csv'))
+  df_means %>% filter(time_bin == 'post')      %>% write_csv(str_c(dir_output_pre, 'fp_str_post_data.csv'))
+
+  # ── 4. sustained range: high - low z-score (fig5i, fig5g/j/m) ───────────────
+  df_means %>%
+    filter(time_bin == 'sustained') %>%
+    select(set_id, subject, region, solution, zscore_blsub_mean) %>%
+    mutate(solution_magnitude = case_when(
+      solution %in% c('sucrose00', 'nacl150') ~ 'low',
+      solution %in% c('sucrose30', 'nacl000') ~ 'high'
+    )) %>%
+    filter(!is.na(solution_magnitude)) %>%
+    select(-solution) %>%
+    spread(solution_magnitude, zscore_blsub_mean) %>%
+    mutate(range = high - low) %>%
+    write_csv(str_c(dir_output_pre, 'fp_str_range_sustained_data.csv'))
+
+  # ── 5. post range: high - low z-score (fig5l, fig5g/j/m) ────────────────────
+  df_means %>%
+    filter(time_bin == 'post') %>%
+    select(set_id, subject, region, solution, zscore_blsub_mean) %>%
+    mutate(solution_magnitude = case_when(
+      solution %in% c('sucrose00', 'nacl150') ~ 'low',
+      solution %in% c('sucrose30', 'nacl000') ~ 'high'
+    )) %>%
+    filter(!is.na(solution_magnitude)) %>%
+    select(-solution) %>%
+    spread(solution_magnitude, zscore_blsub_mean) %>%
+    mutate(range = high - low) %>%
+    write_csv(str_c(dir_output_pre, 'fp_str_range_post_data.csv'))
+
+  # ── 6+7. lick vs nolick trace — per set_id and combined overall (fig5e top) ──
+  fns      <- list.files(dir_combined_setid)
+  fns_filt <- fns[fns %>% str_detect('full')]
+  fns_filt <- fns_filt[fns_filt %>% str_detect('full_peth_summary_trace_triallick')]
+  fns_filt <- fns_filt %>% str_remove('.csv')
+
+  df_lick_trace <- combined_import(
+    import_directory = dir_combined_setid,
+    filter_strings = fns_filt, prefixes = NA, suffixes = c('.csv'), verbose = 0
+  )[[1]] %>%
+    filt_and_format_data() %>%
+    mutate(trial_lick = case_when(trial_lick == 0 ~ 'no_lick', trial_lick == 1 ~ 'lick'))
+
+  # per set_id
+  df_lick_trace %>%
+    write_csv(str_c(dir_output_pre, 'fp_str_lickvsnolick_trace_setid_data.csv'))
+
+  # combined overall: collapse set_id and solution → one trace per region × trial_lick × time_rel
+  df_lick_trace %>%
+    group_by(region, trial_lick, time_rel) %>%
+    summarise(
+      zscore_blsub_mean = mean(zscore_blsub_mean, na.rm = TRUE),
+      zscore_blsub_sem  = mean(zscore_blsub_sem,  na.rm = TRUE),
+      .groups = 'drop'
+    ) %>%
+    write_csv(str_c(dir_output_pre, 'fp_str_lickvsnolick_trace_overall_data.csv'))
+
+  # ── 8. lick vs nolick prelick means by subject (fig5e bottom, fig5f) ─────────
+  fns      <- list.files(dir_combined_setid)
+  fns_filt <- fns[fns %>% str_detect('triallick')]
+  fns_filt <- fns_filt[fns_filt %>% str_detect('peth_summary_means_subject')]
+  fns_filt <- fns_filt %>% str_remove('.csv')
+
+  df_prelick <- combined_import(
+    import_directory = dir_combined_setid,
+    filter_strings = fns_filt, prefixes = NA, suffixes = c('.csv'), verbose = 0
+  )[[1]] %>%
+    filt_and_format_data()
+
+  df_prelick %>% write_csv(str_c(dir_output_pre, 'fp_str_lickvsnolick_prelick_data.csv'))
+
+  # ── 9. prelick range: lick - nolick z-score (fig5f, fig5g/j/m) ──────────────
+  df_prelick %>%
+    filter(time_bin == 'prelick') %>%
+    select(set_id, subject, region, trial_lick, zscore_blsub_mean) %>%
+    spread(trial_lick, zscore_blsub_mean) %>%
+    mutate(range = `1` - `0`) %>%
+    write_csv(str_c(dir_output_pre, 'fp_str_range_prelick_data.csv'))
+
+  # ── 10. lick vs nolick prelick means — combined across all set_ids (fig5e bottom + stats)
+  # this is a separately pre-computed file where trials were pooled across set_ids
+  # BEFORE computing subject means — not merely an average of per-set_id means
+  read.csv(str_c(dir_combined_setid, 'combined_main_set_id_lickvsnolick_peth_summary_means_subject.csv')) %>%
+    filter(!region %>% str_detect('LHA')) %>%
+    mutate(region = region %>% factor(levels = unique(key_regions$region_label))) %>%
+    select(subject, region, time_bin, trial_lick, zscore_blsub_mean) %>%
+    write_csv(str_c(dir_output_pre, 'fp_str_lickvsnolick_prelick_combined_data.csv'))
+
+} else {
+
+  message('toggle_process = 0: preprocessing CSVs will be read by each section as needed')
+
+}
+```
+
+
+---
+
+## fig5b: fp str placements colored region
+```{r eval=FALSE}
+dir_output_b <- str_c(dir_output, 'b/')
+dir.create(dir_output_b, recursive = TRUE, showWarnings = FALSE)
+
+# derive unique subject × region pairs from the range data
+summary_range_b <- read.csv(str_c(dir_output_pre, 'fp_str_range_prelick_data.csv'))   %>% select(subject, region) %>%
+  bind_rows(read.csv(str_c(dir_output_pre, 'fp_str_range_sustained_data.csv')) %>% select(subject, region)) %>%
+  bind_rows(read.csv(str_c(dir_output_pre, 'fp_str_range_post_data.csv'))      %>% select(subject, region)) %>%
+  unique()
+
+plt_data_b <- summary_range_b %>%
+  join_placements() %>%
+  select(subject, region, starts_with('hit')) %>%
+  mutate(region = region %>% factor(levels = unique(key_regions$region_label)))
+
+# subject and fiber counts
+plt_data_b %>% group_by(region) %>% summarise(count = n()) %>% summarise(fiber_count_total = sum(count))
+plt_data_b %>% select(subject) %>% unique() %>% summarise(subject_count_total = n())
+```
+
+```{r eval=FALSE}
+source('./functions/plotting_placements.R')
+
+for(loop_plane in c('horizontal')){
+  plt_str_d(df = plt_data_b, var_color = !!sym('region'), var_color_name = 'Region',
+            vars_facet = c('.', '.'), plt_plane = loop_plane,
+            plt_dim_base = 2, color_values = color_values_regions_da7)
+  save_pdf(dir_output_b, str_c('placement_generic_', loop_plane, '.pdf'), 6, 6)
+}
+
+```
+
+---
+
+## fig5d: lick & fp str trace
+```{r eval=FALSE}
+dir_output_d <- str_c(dir_output, 'd/')
+dir.create(dir_output_d, recursive = TRUE, showWarnings = FALSE)
+
+plt_data_d <- read.csv(str_c(dir_output_pre, 'fp_str_trace_data.csv')) %>%
+  mutate(region = factor(region, levels = key_regions$region_label %>% unique())) %>%
+  mutate(set_id = factor(set_id, levels = key_set_id$set_id_label %>% unique()))
+
+plt_data_d_lick <- read.csv(str_c(dir_output_pre, 'fp_str_licking_data.csv')) %>%
+  mutate(set_id = factor(set_id, levels = key_set_id$set_id_label %>% unique()))
+```
+
+```{r eval=FALSE}
+# licking trace
+plt <- plt_data_d_lick %>%
+  ggplot(aes(time_rel, lick_hz_mean, group = solution, color = solution, fill = solution)) +
+  annotate("rect", xmin = 0, xmax = 3, ymin = -Inf, ymax = Inf, alpha = 1/3, fill = "darkgrey") +
+  geom_hline(yintercept = 0, color = 'darkgrey', size = 0.5) +
+  geom_ribbon(
+    aes(ymin = lick_hz_mean - lick_hz_sem, ymax = lick_hz_mean + lick_hz_sem),
+    alpha = 1/3, color = NA) +
+  geom_line() +
+  facet_grid(set_id~.) +
+  scale_color_manual(values = c(color_values_nacl, color_values_suc)) +
+  scale_fill_manual(values  = c(color_values_nacl, color_values_suc)) +
+  theme_ag01(6) +
+  theme(strip.text = element_text(margin = margin(t = 5, r = 5, b = 5, l = 5))) +
+  theme(panel.spacing.y = unit(0.5, "lines")) +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(2.3, 'cm'))
+
+plt <- plt %>% add_scale_bar(origin = c(-0.1, -1), x_len = 1, y_len = 1)
+plt
+save_pdf(dir_output_d, 'fp_str_licking.pdf', 9, 4)
+```
+
+```{r eval=FALSE, fig.width = 8, fig.height = 4}
+# fp trace
+plt <- plt_data_d %>%
+  ggplot(aes(time_rel, zscore_blsub_mean, group = solution, color = solution, fill = solution)) +
+  annotate("rect", xmin = 0, xmax = 3, ymin = -Inf, ymax = Inf, alpha = 1/3, fill = "darkgrey") +
+  geom_hline(yintercept = 0, color = 'darkgrey', size = 0.5) +
+  geom_ribbon(
+    aes(ymin = zscore_blsub_mean - zscore_blsub_sem, ymax = zscore_blsub_mean + zscore_blsub_sem),
+    alpha = 1/3, color = NA) +
+  geom_line() +
+  facet_grid(set_id~region) +
+  scale_color_manual(values = c(color_values_nacl, color_values_suc)) +
+  scale_fill_manual(values  = c(color_values_nacl, color_values_suc)) +
+  theme_ag01(6) +
+  theme(strip.text = element_text(margin = margin(t = 5, r = 5, b = 5, l = 5))) +
+  theme(panel.spacing.y = unit(0.5, "lines")) +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(2.3, 'cm'))
+
+plt <- plt %>% add_scale_bar(origin = c(-3, -1), x_len = 1, y_len = 1)
+plt
+save_pdf(dir_output_d, 'fp_str_trace.pdf', 9, 4)
+```
+
+---
+
+## fig5e: fp str lick vs nolick
+```{r eval=FALSE}
+# ── setup ──────────────────────────────────────────────────────────────────────
+toggle_process <- 0 # 1 = compute stats and save  |  0 = read saved stats
+
+dir_output_e <- str_c(dir_output, 'e/')
+dir.create(dir_output_e, recursive = TRUE, showWarnings = FALSE)
+
+fn_e_stats <- 'fp_str_summary_lickvsnolick_prelick_stats'
+```
+
+```{r eval=FALSE}
+plt_data_e_overall <- read.csv(str_c(dir_output_pre, 'fp_str_lickvsnolick_trace_overall_data.csv')) %>%
+  mutate(region = factor(region, levels = key_regions$region_label %>% unique()))
+
+plt_data_e_setid <- read.csv(str_c(dir_output_pre, 'fp_str_lickvsnolick_trace_setid_data.csv')) %>%
+  mutate(region = factor(region, levels = key_regions$region_label %>% unique())) %>%
+  mutate(set_id = factor(set_id, levels = key_set_id$set_id_label %>% unique()))
+
+plt_data_e_prelick <- read.csv(str_c(dir_output_pre, 'fp_str_lickvsnolick_prelick_data.csv')) %>%
+  mutate(region = factor(region, levels = key_regions$region_label %>% unique())) %>%
+  mutate(set_id = factor(set_id, levels = key_set_id$set_id_label %>% unique()))
+
+# combined across all set_ids — trials pooled before subject means were computed (see preprocessing step 10)
+plt_data_e_prelick_overall <- read.csv(str_c(dir_output_pre, 'fp_str_lickvsnolick_prelick_combined_data.csv')) %>%
+  mutate(region = factor(region, levels = key_regions$region_label %>% unique()))
+
+if (toggle_process == 1) {
+
+  stats_e_prelick <- plt_data_e_prelick_overall %>%
+    filter(time_bin == 'prelick') %>%
+    mutate(trial_lick = ifelse(trial_lick == 1, 'lick', 'nolick')) %>%
+    select(subject, region, trial_lick, zscore_blsub_mean) %>%
+    spread(trial_lick, zscore_blsub_mean) %>%
+    tidy_ttest_paired(NA, NA, 'lick', 'nolick', 'region') %>%
+    quick_sig()
+
+  stats_e_prelick %>% write_csv(str_c(dir_output_e, fn_e_stats, '.csv'))
+
+} else {
+
+  stats_e_prelick <- read.csv(str_c(dir_output_e, fn_e_stats, '.csv'))
+
+}
+```
+
+```{r eval=FALSE}
+# trace: lick vs no-lick — combined across set_ids
+plt <- plt_data_e_overall %>%
+  filter(time_rel < 3, time_rel > -0.5) %>%
+  ggplot(aes(time_rel, zscore_blsub_mean, group = trial_lick, color = trial_lick, fill = trial_lick)) +
+  annotate("rect", xmin = 0, xmax = 3, ymin = -Inf, ymax = Inf, alpha = 1/3, fill = "darkgrey") +
+  geom_vline(xintercept = 0.3, color = 'darkgrey', size = 0.5, linetype = 2) +
+  geom_hline(yintercept = 0, color = 'darkgrey', size = 0.5) +
+  geom_ribbon(
+    aes(ymin = zscore_blsub_mean - zscore_blsub_sem, ymax = zscore_blsub_mean + zscore_blsub_sem),
+    alpha = 1/3, color = NA) +
+  geom_line() +
+  facet_grid(.~region) +
+  scale_color_manual(values = c('blue', 'black')) +
+  scale_fill_manual(values  = c('blue', 'black')) +
+  theme_ag01(6) +
+  theme(strip.text = element_text(margin = margin(t = 5, r = 5, b = 5, l = 5))) +
+  force_panelsizes(rows = unit(7.878, 'mm'), cols = unit(12, 'mm'))
+
+plt <- plt %>% add_scale_bar(origin = c(-0.5, -0.5), x_len = 1, y_len = 1)
+plt
+save_pdf(dir_output_e, 'fp_str_lickvnolick_overall.pdf', 6, 6)
+```
+
+```{r eval=FALSE}
+# prelick summary: lick vs no-lick (0 vs ≥1 licks) — combined across set_ids (trials pooled before subject means)
+plt_data_e_prelick_overall %>%
+  filter(time_bin == 'prelick') %>%
+  mutate(trial_lick = ifelse(trial_lick == 0, '0', '≥1')) %>%
+  mutate(trial_lick = trial_lick %>% factor(levels = c('0', '≥1'))) %>%
+  ggplot(aes(trial_lick, zscore_blsub_mean)) +
+  geom_line(aes(group = interaction(region, subject)), alpha = 1/3, size = 1/4) +
+  geom_hline(yintercept = 0, size = 1/4, color = 'darkgrey') +
+  stat_summary(fun = 'mean', geom = 'line', aes(group = 1)) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = 1), width = 0) +
+  theme_ag01(6) +
+  facet_grid(.~region, scales = 'free') +
+  coord_cartesian(xlim = c(0.5, 2.5), ylim = c(-1, 3), clip = 'off', expand = 0) +
+  force_panelsizes(rows = unit(7.878, 'mm'), cols = unit(12, 'mm')) +
+  theme(strip.text.x = element_blank()) +
+  ylab('Z-score pre-lick (0.0-0.3 s)') + xlab('')
+
+save_pdf(dir_output_e, 'fp_str_summary_lickvsnolick_prelick.pdf', 6, 6)
+
+# stats
+stats_e_prelick %>% select(region, sig_symbol)
+```
+
+---
+
+## fig5f: fp str prelick range
+```{r eval=FALSE}
+dir_output_f <- str_c(dir_output, 'f/')
+dir.create(dir_output_f, recursive = TRUE, showWarnings = FALSE)
+
+plt_data_f <- read.csv(str_c(dir_output_pre, 'fp_str_range_prelick_data.csv')) %>%
+  mutate(region = factor(region, levels = key_regions$region_label %>% unique())) %>%
+  mutate(set_id = factor(set_id, levels = key_set_id$set_id_label %>% unique()))
+```
+
+```{r eval=FALSE}
+plt_data_f %>%
+  group_by(set_id, region) %>%
+  summarise(range_mean = range %>% mean(na.rm = TRUE), .groups = 'drop') %>%
+  ggplot(aes(region, set_id, fill = range_mean)) +
+  geom_tile() +
+  scale_fill_viridis_c(limits = c(-0.2, 1), oob = scales::squish) +
+  ylab('') + xlab('') +
+  theme_ag01(6) +
+  coord_cartesian(xlim = c(0.5, 7.5), ylim = c(0.5, 3.5), clip = 'off', expand = 0) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  force_panelsizes(rows = unit(16, 'mm'), cols = unit(20, 'mm'))
+
+save_pdf(dir_output_f, 'fp_str_summary_lickvsnolick_prelick_heat.pdf', 6, 6)
+```
+
+---
+
+## fig5h: fp str sustained
+```{r eval=FALSE}
+# ── setup ──────────────────────────────────────────────────────────────────────
+toggle_process <- 0   # 1 = compute stats and save  |  0 = read saved stats
+
+dir_output_h <- str_c(dir_output, 'h/')
+dir.create(dir_output_h, recursive = TRUE, showWarnings = FALSE)
+
+fn_h <- 'fp_str_summary_combined_sustained'
+```
+
+```{r eval=FALSE}
+plt_data_h <- read.csv(str_c(dir_output_pre, 'fp_str_sustained_data.csv')) %>%
+  mutate(region = factor(region, levels = key_regions$region_label %>% unique())) %>%
+  mutate(set_id = factor(set_id, levels = key_set_id$set_id_label %>% unique()))
+
+if (toggle_process == 1) {
+
+  set_ids    <- plt_data_h$set_id %>% unique()
+  regions    <- plt_data_h$region %>% unique()
+  first_loop <- 1
+
+  for(loop_set_id in set_ids){
+    for(loop_region in regions){
+      stats_list <- plt_data_h %>%
+        filter(set_id == loop_set_id, region == loop_region) %>%
+        aov_rm_one_within(NA, NA, 'subject', 'zscore_blsub_mean', 'solution')
+
+      stats_list[[2]] <- stats_list[[2]] %>%
+        mutate(set_id = loop_set_id, region = loop_region) %>%
+        select(set_id, region, everything())
+      stats_list[[3]] <- stats_list[[3]] %>%
+        mutate(set_id = loop_set_id, region = loop_region) %>%
+        select(set_id, region, everything())
+
+      if(first_loop == 1){
+        aov_h_oneway <- stats_list[[2]]; hsd_h_oneway <- stats_list[[3]]; first_loop <- 0
+      } else {
+        aov_h_oneway <- stats_list[[2]] %>% bind_rows(aov_h_oneway,.)
+        hsd_h_oneway <- stats_list[[3]] %>% bind_rows(hsd_h_oneway,.)
+      }
+    }
+  }
+
+  aov_h_oneway <- aov_h_oneway %>%
+    select(-sig_text, -sig_symbol) %>%
+    rename(p_value_raw = p_value) %>%
+    mutate(p_value = ifelse(set_id %in% c('FR:Suc', 'WR:Suc'), p_value_raw * 3, p_value_raw)) %>%
+    quick_sig()
+
+  aov_h_oneway %>% write_csv(str_c(dir_output_h, fn_h, '_stats_aov_oneway.csv'))
+  hsd_h_oneway %>% write_csv(str_c(dir_output_h, fn_h, '_stats_hsd_oneway.csv'))
+
+  # two-way anova: solution × set_id for fr/wr suc, per region
+  first_loop <- 1
+
+  for(loop_region in regions){
+    stats_list <- plt_data_h %>%
+      filter(set_id %in% c('WR:Suc', 'FR:Suc'), region == loop_region) %>%
+      aov_rm_two_within(NA, NA, 'subject', 'zscore_blsub_mean', 'solution', 'set_id')
+
+    stats_list[[2]] <- stats_list[[2]] %>% mutate(region = loop_region) %>% select(region, everything())
+    stats_list[[3]] <- stats_list[[3]] %>% mutate(region = loop_region) %>% select(region, everything())
+
+    if(first_loop == 1){
+      aov_h_interaction <- stats_list[[2]]; hsd_h_interaction <- stats_list[[3]]; first_loop <- 0
+    } else {
+      aov_h_interaction <- stats_list[[2]] %>% bind_rows(aov_h_interaction,.)
+      hsd_h_interaction <- stats_list[[3]] %>% bind_rows(hsd_h_interaction,.)
+    }
+  }
+
+  aov_h_interaction <- aov_h_interaction %>%
+    select(-sig_text, -sig_symbol) %>%
+    rename(p_value_raw = p_value) %>%
+    mutate(p_value = p_value_raw * 3) %>%
+    quick_sig()
+
+  aov_h_interaction %>% write_csv(str_c(dir_output_h, fn_h, '_stats_aov_interaction.csv'))
+  hsd_h_interaction %>% write_csv(str_c(dir_output_h, fn_h, '_stats_hsd_interaction.csv'))
+
+} else {
+
+  aov_h_oneway      <- read.csv(str_c(dir_output_h, fn_h, '_stats_aov_oneway.csv'))      %>% mutate(region = factor(region, levels = key_regions$region_label %>% unique())) %>% mutate(set_id = factor(set_id, levels = key_set_id$set_id_label %>% unique()))
+  hsd_h_oneway      <- read.csv(str_c(dir_output_h, fn_h, '_stats_hsd_oneway.csv'))
+  aov_h_interaction <- read.csv(str_c(dir_output_h, fn_h, '_stats_aov_interaction.csv')) %>% mutate(region = factor(region, levels = key_regions$region_label %>% unique()))
+  hsd_h_interaction <- read.csv(str_c(dir_output_h, fn_h, '_stats_hsd_interaction.csv'))
+
+}
+```
+
+```{r eval=FALSE}
+plt_data_h %>%
+  left_join(join_solution_x) %>%
+  ggplot(aes(plt_x, zscore_blsub_mean, color = set_id)) +
+  geom_hline(yintercept = 0, size = 1/4, color = 'darkgrey') +
+  stat_summary(fun = 'mean', geom = 'line', aes(group = set_id)) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = set_id), width = 0) +
+  theme_ag01(6) +
+  scale_color_manual(values = color_values_experiment_set) +
+  theme(axis.text.x = element_blank()) +
+  facet_grid(.~region, scales = 'free') +
+  coord_cartesian(xlim = c(0.5, 5.5), ylim = c(-2, 6), clip = 'off', expand = 0) +
+  force_panelsizes(rows = unit(16,'mm'), cols = unit(12, 'mm')) +
+  theme(strip.text = element_blank()) +
+  ylab('Z-score sustained (2-3 s)') + xlab('')
+
+save_pdf(dir_output_h, str_c(fn_h, '.pdf'), 6, 6)
+```
+
+```{r eval=FALSE}
+# solution effect per region × set_id
+aov_h_oneway %>%
+  mutate(set_id = factor(set_id, levels = c('WR:Suc', 'FR:Suc', 'WR:NaCl'))) %>%
+  filter(effect == 'solution') %>%
+  select(set_id, region, p_value) %>%
+  quick_sig() %>%
+  ggplot(aes(region, set_id, label = sig_symbol)) +
+  geom_text()
+
+# solution × set_id interaction (fr/wr suc)
+aov_h_interaction %>%
+  filter(effect == 'solution*set_id') %>%
+  select(region, p_value) %>%
+  quick_sig() %>%
+  ggplot(aes(region, 1, label = sig_symbol)) +
+  geom_text()
+```
+
+---
+
+## fig5i: fp str sustained range
+```{r eval=FALSE}
+dir_output_i <- str_c(dir_output, 'i/')
+dir.create(dir_output_i, recursive = TRUE, showWarnings = FALSE)
+
+plt_data_i <- read.csv(str_c(dir_output_pre, 'fp_str_range_sustained_data.csv')) %>%
+  mutate(region = factor(region, levels = key_regions$region_label %>% unique())) %>%
+  mutate(set_id = factor(set_id, levels = key_set_id$set_id_label %>% unique()))
+```
+
+```{r eval=FALSE}
+plt_data_i %>%
+  group_by(set_id, region) %>%
+  summarise(range_mean = range %>% mean(), .groups = 'drop') %>%
+  ggplot(aes(region, set_id, fill = range_mean)) +
+  geom_tile() +
+  scale_fill_viridis_c(limits = c(-1, 5), oob = scales::squish) +
+  ylab('') + xlab('') +
+  coord_cartesian(xlim = c(0.5, 7.5), ylim = c(0.5, 3.5), clip = 'off', expand = 0) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  force_panelsizes(rows = unit(16, 'mm'), cols = unit(20, 'mm'))
+
+save_pdf(dir_output_i, 'fp_str_range_sustained_heat.pdf', 6, 6)
+```
+
+---
+
+## fig5k: fp str post
+```{r eval=FALSE}
+# ── setup ──────────────────────────────────────────────────────────────────────
+toggle_process <- 0   # 1 = compute stats and save  |  0 = read saved stats
+
+dir_output_k <- str_c(dir_output, 'k/')
+dir.create(dir_output_k, recursive = TRUE, showWarnings = FALSE)
+
+fn_k <- 'fp_str_summary_combined_post'
+```
+
+```{r eval=FALSE}
+plt_data_k <- read.csv(str_c(dir_output_pre, 'fp_str_post_data.csv')) %>%
+  mutate(region = factor(region, levels = key_regions$region_label %>% unique())) %>%
+  mutate(set_id = factor(set_id, levels = key_set_id$set_id_label %>% unique()))
+
+if (toggle_process == 1) {
+
+  set_ids    <- plt_data_k$set_id %>% unique()
+  regions    <- plt_data_k$region %>% unique()
+  first_loop <- 1
+
+  for(loop_set_id in set_ids){
+    for(loop_region in regions){
+      stats_list <- plt_data_k %>%
+        filter(set_id == loop_set_id, region == loop_region) %>%
+        aov_rm_one_within(NA, NA, 'subject', 'zscore_blsub_mean', 'solution')
+
+      stats_list[[2]] <- stats_list[[2]] %>%
+        mutate(set_id = loop_set_id, region = loop_region) %>%
+        select(set_id, region, everything())
+      stats_list[[3]] <- stats_list[[3]] %>%
+        mutate(set_id = loop_set_id, region = loop_region) %>%
+        select(set_id, region, everything())
+
+      if(first_loop == 1){
+        aov_k_oneway <- stats_list[[2]]; hsd_k_oneway <- stats_list[[3]]; first_loop <- 0
+      } else {
+        aov_k_oneway <- stats_list[[2]] %>% bind_rows(aov_k_oneway,.)
+        hsd_k_oneway <- stats_list[[3]] %>% bind_rows(hsd_k_oneway,.)
+      }
+    }
+  }
+
+  aov_k_oneway <- aov_k_oneway %>%
+    select(-sig_text, -sig_symbol) %>%
+    rename(p_value_raw = p_value) %>%
+    mutate(p_value = ifelse(set_id %in% c('FR:Suc', 'WR:Suc'), p_value_raw * 3, p_value_raw)) %>%
+    quick_sig()
+
+  aov_k_oneway %>% write_csv(str_c(dir_output_k, fn_k, '_stats_aov_oneway.csv'))
+  hsd_k_oneway %>% write_csv(str_c(dir_output_k, fn_k, '_stats_hsd_oneway.csv'))
+
+  # two-way anova: solution × set_id for fr/wr suc, per region
+  first_loop <- 1
+
+  for(loop_region in regions){
+    stats_list <- plt_data_k %>%
+      filter(set_id %in% c('WR:Suc', 'FR:Suc'), region == loop_region) %>%
+      aov_rm_two_within(NA, NA, 'subject', 'zscore_blsub_mean', 'solution', 'set_id')
+
+    stats_list[[2]] <- stats_list[[2]] %>% mutate(region = loop_region) %>% select(region, everything())
+    stats_list[[3]] <- stats_list[[3]] %>% mutate(region = loop_region) %>% select(region, everything())
+
+    if(first_loop == 1){
+      aov_k_interaction <- stats_list[[2]]; hsd_k_interaction <- stats_list[[3]]; first_loop <- 0
+    } else {
+      aov_k_interaction <- stats_list[[2]] %>% bind_rows(aov_k_interaction,.)
+      hsd_k_interaction <- stats_list[[3]] %>% bind_rows(hsd_k_interaction,.)
+    }
+  }
+
+  aov_k_interaction <- aov_k_interaction %>%
+    select(-sig_text, -sig_symbol) %>%
+    rename(p_value_raw = p_value) %>%
+    mutate(p_value = p_value_raw * 3) %>%
+    quick_sig()
+
+  aov_k_interaction %>% write_csv(str_c(dir_output_k, fn_k, '_stats_aov_interaction.csv'))
+  hsd_k_interaction %>% write_csv(str_c(dir_output_k, fn_k, '_stats_hsd_interaction.csv'))
+
+} else {
+
+  aov_k_oneway      <- read.csv(str_c(dir_output_k, fn_k, '_stats_aov_oneway.csv'))      %>% mutate(region = factor(region, levels = key_regions$region_label %>% unique())) %>% mutate(set_id = factor(set_id, levels = key_set_id$set_id_label %>% unique()))
+  hsd_k_oneway      <- read.csv(str_c(dir_output_k, fn_k, '_stats_hsd_oneway.csv'))
+  aov_k_interaction <- read.csv(str_c(dir_output_k, fn_k, '_stats_aov_interaction.csv')) %>% mutate(region = factor(region, levels = key_regions$region_label %>% unique()))
+  hsd_k_interaction <- read.csv(str_c(dir_output_k, fn_k, '_stats_hsd_interaction.csv'))
+
+}
+```
+
+```{r eval=FALSE}
+plt_data_k %>%
+  left_join(join_solution_x) %>%
+  ggplot(aes(plt_x, zscore_blsub_mean, color = set_id)) +
+  geom_hline(yintercept = 0, size = 1/4, color = 'darkgrey') +
+  stat_summary(fun = 'mean', geom = 'line', aes(group = set_id)) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = set_id), width = 0) +
+  theme_ag01(6) +
+  scale_color_manual(values = color_values_experiment_set) +
+  theme(axis.text.x = element_blank()) +
+  facet_grid(.~region, scales = 'free') +
+  coord_cartesian(xlim = c(0.5, 5.5), ylim = c(-1, 1.5), clip = 'off', expand = 0) +
+  force_panelsizes(rows = unit(16,'mm'), cols = unit(12, 'mm')) +
+  theme(strip.text = element_blank()) +
+  ylab('Z-score post (6-8 s)') + xlab('')
+
+save_pdf(dir_output_k, str_c(fn_k, '.pdf'), 6, 6)
+```
+
+```{r eval=FALSE}
+# solution effect per region × set_id
+aov_k_oneway %>%
+  mutate(set_id = factor(set_id, levels = c('WR:Suc', 'FR:Suc', 'WR:NaCl'))) %>%
+  filter(effect == 'solution') %>%
+  select(set_id, region, p_value) %>%
+  quick_sig() %>%
+  ggplot(aes(region, set_id, label = sig_symbol)) +
+  geom_text()
+
+# solution × set_id interaction (fr/wr suc)
+aov_k_interaction %>%
+  filter(effect == 'solution*set_id') %>%
+  select(region, p_value) %>%
+  quick_sig() %>%
+  ggplot(aes(region, 1, label = sig_symbol)) +
+  geom_text()
+```
+
+---
+
+## fig5l: fp str post range
+```{r eval=FALSE}
+dir_output_l <- str_c(dir_output, 'l/')
+dir.create(dir_output_l, recursive = TRUE, showWarnings = FALSE)
+
+plt_data_l <- read.csv(str_c(dir_output_pre, 'fp_str_range_post_data.csv')) %>%
+  mutate(region = factor(region, levels = key_regions$region_label %>% unique())) %>%
+  mutate(set_id = factor(set_id, levels = key_set_id$set_id_label %>% unique()))
+```
+
+```{r eval=FALSE}
+plt_data_l %>%
+  group_by(set_id, region) %>%
+  summarise(range_mean = range %>% mean(), .groups = 'drop') %>%
+  ggplot(aes(region, set_id, fill = range_mean)) +
+  geom_tile() +
+  scale_fill_viridis_c(limits = c(-1, 2), oob = scales::squish) +
+  ylab('') + xlab('') +
+  coord_cartesian(xlim = c(0.5, 7.5), ylim = c(0.5, 3.5), clip = 'off', expand = 0) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  force_panelsizes(rows = unit(16, 'mm'), cols = unit(20, 'mm'))
+
+save_pdf(dir_output_l, 'fp_str_range_post_heat.pdf', 6, 6)
+```
+
+---
+
+## fig5g/j/m: fp str placements range — 3D (WR:NaCl)
+```{r eval=FALSE}
+dir_output_gjm <- str_c(dir_output, 'gjm/')
+dir.create(dir_output_gjm, recursive = TRUE, showWarnings = FALSE)
+
+# combine range data across time bins — all read directly from pre/
+summary_range_combined <- read.csv(str_c(dir_output_pre, 'fp_str_range_prelick_data.csv'))   %>% mutate(time_bin = 'prelick')   %>% select(set_id, subject, region, time_bin, range) %>%
+  bind_rows(read.csv(str_c(dir_output_pre, 'fp_str_range_sustained_data.csv')) %>% mutate(time_bin = 'sustained') %>% select(set_id, subject, region, time_bin, range)) %>%
+  bind_rows(read.csv(str_c(dir_output_pre, 'fp_str_range_post_data.csv'))      %>% mutate(time_bin = 'post')      %>% select(set_id, subject, region, time_bin, range)) %>%
+  mutate(set_id = factor(set_id, levels = key_set_id$set_id_label %>% unique()))
+```
+
+```{r eval=FALSE}
+for(loop_time_bin in c('prelick', 'sustained', 'post')){
+
+  fn_stem_gjm <- str_c('placement_vs_range_WRNaCl_', loop_time_bin)
+
+  df <- summary_range_combined %>%
+    filter(set_id == 'WR:NaCl', time_bin == loop_time_bin) %>%
+    join_placements() %>%
+    select(set_id, subject, time_bin, region, range, starts_with('hit')) %>%
+    mutate(region = region %>% factor(levels = unique(key_regions$region_label))) %>%
+    filter(!is.na(range))
+
+  if(loop_time_bin == 'prelick')   color_limits <- c(-0.2, 1)
+  if(loop_time_bin == 'sustained') color_limits <- c(-1,   5)
+  if(loop_time_bin == 'post')      color_limits <- c(-1,   2)
+
+  tryCatch(
+    plt_str_3d(df = df, var_color = 'range', color_limits = color_limits,
+               dir_output = dir_output_gjm, fn_stem = fn_stem_gjm, toggle_save = 1),
+    error = function(e) message('plt_str_3d skipped (kaleido): ', conditionMessage(e))
+  )
+}
+```
+
+---
+

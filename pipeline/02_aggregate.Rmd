@@ -1,0 +1,315 @@
+---
+title: "aggregate"
+author: "adam gordon-fennell"
+date: '2023-12-28'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# setup
+## libraries
+```{r}
+# ── packages ──────────────────────────────────────────────────────────────────
+library(tidyverse)
+library(readxl)
+library(arrow)
+
+arrow::set_cpu_count(4)
+
+# ── project functions ─────────────────────────────────────────────────────────
+source('../functions/params.R')
+source('../functions/theme.R')
+source('../functions/general.R')
+source('../functions/r_general.R')
+source('../functions/analysis_peth.R')
+source('../logs_and_keys/key_local_directories.R')
+```
+
+## directories
+```{r}
+dir_localdata_sessions <- '../data/sessions/'
+dir_output             <- '../data/combined_setid/'
+
+dir.create(dir_output, recursive = TRUE, showWarnings = FALSE)
+```
+
+## logs / keys
+```{r}
+# ── analysis inclusion / exclusion log (local xlsx) ──────────────────────────
+log_analysis_subjects <- read_xlsx('../logs_and_keys/log_data_analysis.xlsx', sheet = 'subjects',    na = c('NA', ''))
+log_analysis_fp       <- read_xlsx('../logs_and_keys/log_data_analysis.xlsx', sheet = 'fp',          na = c('NA', ''))
+log_analysis_exp      <- read_xlsx('../logs_and_keys/log_data_analysis.xlsx', sheet = 'experiments', na = c('NA', ''))
+
+log_placements <- read.csv('../logs_and_keys/log_fiber_placements.csv', na.strings = c('', 'NA'))
+```
+
+## session filter
+```{r}
+# ── session-level import key ──────────────────────────────────────────────────
+log_data <- log_analysis_fp %>%
+  filter(is.na(exclude) | exclude != 1) %>%
+  get_set_id() %>%
+  filter(!is.na(set_id))
+
+join_info <- log_data %>%
+  select(blockname, experiment, subject, set_id)
+
+# ── set_ids included in paper ─────────────────────────────────────────────────
+loop_set_ids <- log_data$set_id %>% unique()
+```
+
+## QC metrics
+```{r}
+# ── read per-session signal quality metrics ───────────────────────────────────
+fns_qc_metrics <- list.files(dir_localdata_sessions, pattern = 'quality_metrics.csv',
+                              recursive = TRUE, full.names = TRUE)
+
+combined_qc_metrics <- bind_rows(lapply(fns_qc_metrics, read.csv))
+```
+
+---
+
+# fp peth aggregation
+```{r}
+# ── PETH parameters ───────────────────────────────────────────────────────────
+peth_filt_fulltrace <- c(-3, 8)
+
+peth_tm_bins <- tibble(
+  tm_bin_id =    c('access', 'prelick', 'sustained', 'post'),
+  tm_bin_start = c(       0,         0,           2,      6),
+  tm_bin_end   = c(       3,       0.3,           3,      8)
+)
+
+# minimum lick onset for triallick-filtered outputs (end of prelick window, in ms)
+tm_min_lick_onset <- peth_tm_bins %>% filter(tm_bin_id == 'prelick') %>% pull(tm_bin_end) * 1000
+```
+
+```{r}
+for(loop_set_id in loop_set_ids) {
+  print(str_c('processing set_id: ', loop_set_id))
+
+  # ── load and filter sessions for this set_id ────────────────────────────────
+  process_blocknames_setid <- log_data %>%
+    filter(set_id == loop_set_id) %>%
+    pull(blockname)
+
+  df_fp_peth <- combine_session_fp(process_blocknames_setid, dir_localdata_sessions) %>%
+    left_join(log_analysis_fp %>% select(blockname, subject), by = 'blockname')
+
+  df_fp_peth <- df_fp_peth %>%
+    filter_qc_metrics(combined_qc_metrics, removal_type = 1) %>%  # remove poor-signal fibers
+    format_regions('region', key_regions) %>%                      # standardise region label strings
+    filter_placements('exclude_da_consumption') %>%                # remove histologically misplaced fibers
+    filter(time_rel > peth_filt_fulltrace[1], time_rel < peth_filt_fulltrace[2]) %>%
+    left_join(join_info, by = c('blockname', 'subject'))
+
+  # ── inner loop: all trials (full) and lick trials only (filtlick) ───────────
+  for(toggle_filt_trial_lick in c(0, 1)) {
+
+    df_filt <- df_fp_peth
+
+    if(toggle_filt_trial_lick == 1) {
+      df_filt    <- df_filt %>% filter(trial_lick == 1)
+      fn_prefix  <- str_c(loop_set_id, '_filtlick')
+    } else {
+      fn_prefix  <- str_c(loop_set_id, '_full')
+    }
+
+    # ── trace: population-level ────────────────────────────────────────────────
+    df_filt %>%
+      group_by(set_id, region, solution, time_rel) %>%
+      get_mean_signals() %>%
+      write_csv(str_c(dir_output, fn_prefix, '_peth_summary_trace_overall.csv'))
+
+    # ── trace: split by trial_lick flag (full only) ───────────────────────────
+    if(toggle_filt_trial_lick == 0) {
+      df_filt %>%
+        filter(lick_ts_first > tm_min_lick_onset | is.na(lick_ts_first)) %>%
+        group_by(set_id, region, trial_lick, time_rel) %>%
+        get_mean_signals() %>%
+        write_csv(str_c(dir_output, fn_prefix, '_peth_summary_trace_triallick.csv'))
+    }
+
+    # ── trace: subject-level ───────────────────────────────────────────────────
+    df_filt %>%
+      group_by(experiment, subject, set_id, region, solution, time_rel) %>%
+      get_mean_signals() %>%
+      write_csv(str_c(dir_output, fn_prefix, '_peth_summary_trace_subject.csv'))
+
+    # ── means: subject-level ──────────────────────────────────────────────────
+    grouping_vars <- c('experiment', 'subject', 'set_id', 'region', 'solution', 'time_bin')
+
+    df_filt %>%
+      left_join(join_info, by = join_by(blockname, subject, experiment, set_id)) %>%
+      get_peth_binned_summary(peth_tm_bins, grouping_vars) %>%
+      write_csv(str_c(dir_output, fn_prefix, '_peth_summary_means_subject.csv'))
+
+    # ── means: subject × trial_lick (full only) ───────────────────────────────
+    if(toggle_filt_trial_lick == 0) {
+      grouping_vars <- c('experiment', 'subject', 'set_id', 'region', 'trial_lick', 'time_bin')
+
+      df_filt %>%
+        left_join(join_info, by = join_by(blockname, subject, experiment, set_id)) %>%
+        filter(lick_ts_first > tm_min_lick_onset | is.na(lick_ts_first)) %>%
+        get_peth_binned_summary(peth_tm_bins, grouping_vars) %>%
+        write_csv(str_c(dir_output, fn_prefix, '_peth_summary_means_subject_triallick.csv'))
+    }
+
+    # ── means: trial-level ────────────────────────────────────────────────────
+    grouping_vars <- c('experiment', 'blockname', 'subject', 'set_id', 'region',
+                       'trial_num', 'solution', 'time_bin',
+                       'lick_count', 'lick_ts_first', 'lick_ts_last')
+
+    df_filt %>%
+      get_peth_binned_summary(peth_tm_bins, grouping_vars) %>%
+      write_csv(str_c(dir_output, fn_prefix, '_peth_summary_means_trial.csv'))
+
+    # ── means: trial × trial_lick (full only) ────────────────────────────────
+    if(toggle_filt_trial_lick == 0) {
+      grouping_vars <- c('experiment', 'blockname', 'subject', 'set_id', 'region',
+                         'trial_num', 'trial_lick', 'time_bin',
+                         'lick_count', 'lick_ts_first', 'lick_ts_last')
+
+      df_filt %>%
+        filter(lick_ts_first > tm_min_lick_onset | is.na(lick_ts_first)) %>%
+        get_peth_binned_summary(peth_tm_bins, grouping_vars) %>%
+        write_csv(str_c(dir_output, fn_prefix, '_peth_summary_means_trial_triallick.csv'))
+    }
+
+    # ── means: binned-trial ───────────────────────────────────────────────────
+    grouping_vars <- c('experiment', 'blockname', 'subject', 'set_id', 'region',
+                       'bin_trial', 'solution', 'time_bin')
+
+    df_filt %>%
+      mutate(bin_trial = cut(trial_num, seq(0, 100, 10), labels = sprintf("%02d", seq(0, 90, 10)))) %>%
+      mutate(bin_trial = as.character(bin_trial)) %>%
+      get_peth_binned_summary(peth_tm_bins, grouping_vars) %>%
+      write_csv(str_c(dir_output, fn_prefix, '_peth_summary_means_binnedtrial.csv'))
+
+    # ── means: binned-trial × trial_lick (full only) ─────────────────────────
+    if(toggle_filt_trial_lick == 0) {
+      grouping_vars <- c('experiment', 'blockname', 'subject', 'set_id', 'region',
+                         'bin_trial', 'trial_lick', 'time_bin')
+
+      df_filt %>%
+        filter(lick_ts_first > tm_min_lick_onset | is.na(lick_ts_first)) %>%
+        mutate(bin_trial = cut(trial_num, seq(0, 100, 10), labels = sprintf("%02d", seq(0, 90, 10)))) %>%
+        mutate(bin_trial = as.character(bin_trial)) %>%
+        get_peth_binned_summary(peth_tm_bins, grouping_vars) %>%
+        write_csv(str_c(dir_output, fn_prefix, '_peth_summary_means_binnedtrial_triallick.csv'))
+    }
+
+  } # end toggle_filt_trial_lick loop
+
+  rm(df_fp_peth, df_filt)
+  gc()
+
+} # end set_id loop
+```
+
+---
+
+# licking aggregation
+```{r}
+# ── spout summary: mean lick count and trial lick proportion per subject ──────
+process_blocknames_all <- log_data %>%
+  filter(set_id %in% loop_set_ids) %>%
+  pull(blockname)
+
+combine_session_files(process_blocknames_all, dir_localdata_sessions, '_data_spout_summary.csv') %>%
+  left_join(join_info, by = 'blockname') %>%
+  group_by(experiment, subject, set_id, solution) %>%
+  summarise(
+    lick_count_trial_mean  = mean(lick_count_trial_mean),
+    trial_lick_proportion  = mean(trial_lick_proportion),
+    .groups = 'drop'
+  ) %>%
+  write_csv(str_c(dir_output, 'licking_spout_summary.csv'))
+```
+
+```{r}
+# ── trial summary: per-trial lick data ───────────────────────────────────────
+combine_session_files(process_blocknames_all, dir_localdata_sessions, '_data_trial_summary.csv') %>%
+  left_join(join_info, by = 'blockname') %>%
+  mutate(lick_ts_first = lick_ts_first / 1000) %>%
+  write_csv(str_c(dir_output, 'licking_trial_summary.csv'))
+```
+
+```{r}
+# ── binned lick rate trace ────────────────────────────────────────────────────
+df_binnedlick <- combine_session_binnedlick(process_blocknames_all, dir_localdata_sessions) %>%
+  left_join(join_info, by = 'blockname') %>%
+  mutate(
+    time_rel   = time_bin / 1000,              # ms → s
+    lick_hz    = count_binned / (100 / 1000)   # counts per 100 ms bin → Hz
+  ) %>%
+  select(-time_bin, -count_binned)
+
+# population-level
+df_binnedlick %>%
+  group_by(set_id, solution, time_rel) %>%
+  summarise(
+    lick_hz_sem  = sd(lick_hz) / sqrt(n()),
+    lick_hz_mean = mean(lick_hz),
+    .groups = 'drop'
+  ) %>%
+  write_csv(str_c(dir_output, 'licking_binnedlick_trace_overall.csv'))
+
+# subject-level
+df_binnedlick %>%
+  group_by(experiment, subject, set_id, solution, time_rel) %>%
+  summarise(
+    lick_hz_sem  = sd(lick_hz) / sqrt(n()),
+    lick_hz_mean = mean(lick_hz),
+    .groups = 'drop'
+  ) %>%
+  write_csv(str_c(dir_output, 'licking_binnedlick_trace_subject.csv'))
+```
+
+```{r}
+# ── per-set_id binnedlick traces (full and filtlick) ─────────────────────────
+# mirrors the FP PETH loop above; needed by sfig09c and any panel reading
+# {set_id}_full_binnedlick_trace_overall.csv or {set_id}_filtlick_binnedlick_trace_overall.csv
+
+for(loop_set_id in loop_set_ids) {
+
+  df_bl_setid <- df_binnedlick %>%
+    filter(set_id == loop_set_id)
+
+  for(toggle_filt_trial_lick in c(0, 1)) {
+
+    df_bl_filt <- df_bl_setid
+
+    if(toggle_filt_trial_lick == 1) {
+      df_bl_filt <- df_bl_filt %>% filter(trial_lick == 1)
+      fn_prefix  <- str_c(loop_set_id, '_filtlick')
+    } else {
+      fn_prefix  <- str_c(loop_set_id, '_full')
+    }
+
+    # population-level
+    df_bl_filt %>%
+      group_by(set_id, solution, time_rel) %>%
+      summarise(
+        lick_hz_sem  = sd(lick_hz) / sqrt(n()),
+        lick_hz_mean = mean(lick_hz),
+        .groups = 'drop'
+      ) %>%
+      write_csv(str_c(dir_output, fn_prefix, '_binnedlick_trace_overall.csv'))
+
+    # subject-level
+    df_bl_filt %>%
+      group_by(experiment, subject, set_id, solution, time_rel) %>%
+      summarise(
+        lick_hz_sem  = sd(lick_hz) / sqrt(n()),
+        lick_hz_mean = mean(lick_hz),
+        .groups = 'drop'
+      ) %>%
+      write_csv(str_c(dir_output, fn_prefix, '_binnedlick_trace_subject.csv'))
+
+  } # end full/filtlick loop
+} # end set_id loop
+```

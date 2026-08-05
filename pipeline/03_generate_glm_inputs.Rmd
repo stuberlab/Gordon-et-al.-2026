@@ -1,0 +1,291 @@
+---
+title: "generate glm inputs"
+author: "adam gordon-fennell"
+date: '2023-05-18'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# run all chunks from the project root so functions with hardcoded ./data/sessions/ paths resolve correctly
+knitr::opts_knit$set(root.dir = normalizePath('../'))
+```
+
+# setup
+## libraries
+```{r}
+# ── packages ──────────────────────────────────────────────────────────────────
+library(tidyverse)
+library(readxl)
+library(arrow)
+library(zoo)
+library(data.table)
+
+# ── project functions ─────────────────────────────────────────────────────────
+source('./functions/params.R')
+source('./functions/theme.R')
+source('./functions/general.R')
+source('./functions/r_general.R')
+source('./functions/glm_generic.R')
+source('./functions/pred_matrix.R')
+source('./functions/signal_matrix.R')
+source('./functions/get_null.R')
+source('./logs_and_keys/key_local_directories.R')
+```
+ 
+## directories
+```{r}
+dir_sessions          <- './data/sessions/'
+dir_null              <- './data/glm_null_distributions/'
+dir_output_combined   <- './data/sessions_combined_subject/'
+
+dir.create(dir_null,            recursive = TRUE, showWarnings = FALSE)
+dir.create(dir_output_combined, recursive = TRUE, showWarnings = FALSE)
+```
+
+## logs / keys
+```{r}
+# ── analysis inclusion / exclusion log (local xlsx) ──────────────────────────
+log_analysis_subjects <- read_xlsx('./logs_and_keys/log_data_analysis.xlsx', sheet = 'subjects',    na = c('NA', ''))
+log_analysis_fp       <- read_xlsx('./logs_and_keys/log_data_analysis.xlsx', sheet = 'fp',          na = c('NA', ''))
+
+log_placements <- read.csv('./logs_and_keys/log_fiber_placements.csv', na.strings = c('', 'NA'))
+```
+
+---
+
+# session filter
+```{r}
+# ── sessions included in glm analysis (wrsuc, frsuc, wrnacl only) ─────────────
+glm_set_ids <- c('wrnacl')
+
+log_data <- log_analysis_fp %>%
+  filter(is.na(exclude) | exclude != 1) %>%
+  get_set_id() %>%
+  filter(set_id %in% glm_set_ids)
+
+# ── read per-session signal quality metrics ────────────────────────────────────
+fns_qc_metrics      <- list.files(dir_sessions, pattern = 'quality_metrics.csv', recursive = TRUE, full.names = TRUE)
+combined_qc_metrics <- bind_rows(lapply(fns_qc_metrics, read.csv))
+```
+
+```{r}
+# ── blockname × region inclusion key ─────────────────────────────────────────
+# one row per session × region; used to filter signal files passed to python glm
+
+blockname_region_filtered <- log_data %>%
+  select(subject, blockname, set_id) %>%
+  left_join(combined_qc_metrics %>% select(blockname, region), by = 'blockname')
+
+# retain da regions only
+blockname_region_filtered <- blockname_region_filtered %>%
+  filter(!str_detect(region, 'lha')) %>%
+  arrange(blockname, region)
+
+# remove histologically misplaced fibers; keep region_original for file matching
+blockname_region_filtered <- blockname_region_filtered %>%
+  mutate(region_original = region) %>%       # raw ID saved before label conversion
+  format_regions('region', key_regions) %>%  # standardise region label strings
+  filter_placements('exclude_da_consumption') %>%
+  select(-starts_with('hit'))
+
+# ── python-ready key: additionally filter by signal quality ───────────────────
+blockname_region_filtered_python <- blockname_region_filtered %>%
+  filter_qc_metrics(combined_qc_metrics, removal_type = 1)
+
+blockname_region_filtered_python %>%
+  write_csv('./data/key_blockname_region_filtered.csv')
+```
+
+---
+
+# execution
+## step 1: generate per-session glm matrices
+
+```{r}
+# ── optional: restrict to specific blocknames ─────────────────────────────────
+# set to NA to process all sessions (default); override to reprocess specific sessions:
+#   target_blocknames <- c('2026_01_30_acr09')
+target_blocknames <- NA
+
+fns <- blockname_region_filtered$blockname %>% unique()
+
+if (!anyNA(target_blocknames)) {
+  fns <- target_blocknames
+  cat('targeting', length(fns), 'blockname(s):', paste(fns, collapse = ', '), '\n')
+}
+```
+
+```{r}
+# ── glm parameters ────────────────────────────────────────────────────────────
+n_samples_per_trial <- 180   # samples per trial at 20 Hz × 9 s window (-3 to 6 s)
+```
+
+```{r}
+# ── generate per-session prediction and signal matrices ───────────────────────
+# set toggle_process = 1 to run; = 0 to skip (matrices already exist)
+toggle_process         <- 1
+toggle_generate_nulls  <- 1   # generate null distributions for python glm (slow)
+
+if (toggle_process) {
+
+  set.seed(42)   # set here so generation is reproducible on every run of this chunk
+
+  # prediction matrix: trial timing and solution identity
+  batch_get_prediction_matrix_multispout(fns)
+
+  # finalise predictors: write per-session predictor csv files to glm/ subfolder
+  finalize_prediction_matrix_multispout_batch(fns, dir_sessions)
+
+  # signal matrix: per-region z-scored peth signal
+  generate_signal_matrix_batch(dir_sessions, fns)
+
+  # diagonal predictor: true trial solution identity (scaled concentration)
+  batch_get_trial_diagonal_matricies(
+    dir_sessions          = dir_sessions,
+    fns                   = fns,
+    n_samples_per_trial   = n_samples_per_trial,
+    toggle_solution_shuffle = 0
+  )
+
+  # diagonal predictor: shuffled trial solution identity (null control)
+  batch_get_trial_diagonal_matricies(
+    dir_sessions          = dir_sessions,
+    fns                   = fns,
+    n_samples_per_trial   = n_samples_per_trial,
+    toggle_solution_shuffle = 1
+  )
+
+  # null distributions for python glm (optional — slow)
+  if (toggle_generate_nulls) {
+    generate_nulls_v02(blockname_region_filtered_python, dir_sessions, dir_null,
+                       region_ids = blockname_region_filtered_python$region_original %>% unique())
+    pad_signal_matrix(dir_null, n_cols = 100)
+  }
+
+
+}
+```
+
+---
+
+## step 2: combine per-subject matrices
+```{r}
+# ── sessions to combine: last 4 sessions per subject × set_id ─────────────────
+log_data_combined_subject <- blockname_region_filtered %>%
+  left_join(log_data %>% select(blockname, last04), by = 'blockname') %>%
+  filter(last04 == 1) %>%
+  arrange(subject, set_id, region)
+
+combined_sets <- log_data_combined_subject %>%
+  select(subject, set_id) %>%
+  unique()
+```
+
+```{r}
+# ── combine signals and predictors across sessions for each subject × set_id ──
+# output structure per subject × set_id:
+#   sessions_combined_subject/<subject>_<set_id>/signals/    — stacked signal csvs
+#   sessions_combined_subject/<subject>_<set_id>/predictors/ — stacked predictor csvs
+#   sessions_combined_subject/<subject>_<set_id>/sample_info.csv — row-level metadata
+
+overwrite <- 1
+
+for (combined_set_n in seq(1, nrow(combined_sets))) {
+
+  combined_set <- combined_sets[combined_set_n, ] %>%
+    left_join(log_data_combined_subject, by = join_by(subject, set_id))
+
+  stem_set              <- str_c(combined_set$subject[1], '_', combined_set$set_id[1])
+  dir_stem_set          <- str_c(dir_output_combined, stem_set, '/')
+  dir_stem_set_signals  <- str_c(dir_stem_set, 'signals/')
+  dir_stem_set_pred     <- str_c(dir_stem_set, 'predictors/')
+
+  print(str_c(' - ', stem_set, ' [', combined_set_n, ' / ', nrow(combined_sets), ']'))
+
+  # skip or recreate output folder based on overwrite flag
+  if (dir.exists(dir_stem_set)) {
+    if (overwrite == 0) {
+      print('  * already combined — skipped (set overwrite = 1 to recreate)')
+      next
+    } else {
+      unlink(dir_stem_set, recursive = TRUE)
+    }
+  }
+
+  dir.create(dir_stem_set)
+  dir.create(dir_stem_set_signals)
+  dir.create(dir_stem_set_pred)
+
+  blockname_strs <- combined_set$blockname %>% unique()
+
+  for (blockname_str in blockname_strs) {
+
+    fn_signals    <- list.files(str_c(dir_sessions, blockname_str, '/glm/signals/'))
+    fn_predictors <- list.files(str_c(dir_sessions, blockname_str, '/glm/'), pattern = '.csv')
+
+    # keep only zscoreblsub signal files
+    fn_signals <- fn_signals[grepl('zscoreblsub\\.csv$', fn_signals)]
+
+    # keep only signal files for regions present in log_data_combined_subject
+    # (filter_placements already removed bad placements at the row level)
+    valid_regions <- log_data_combined_subject %>%
+      filter(blockname == blockname_str) %>%
+      pull(region_original)
+
+    fn_signals_df <- tibble(blockname = blockname_str, fn = fn_signals) %>%
+      mutate(region = str_remove_all(fn, '_zscoreblsub\\.csv')) %>%
+      filter(region %in% valid_regions)
+
+    fn_signals <- fn_signals_df$fn
+
+    # append signal files
+    for (fn_signal in fn_signals) {
+      df <- read.csv(str_c(dir_sessions, blockname_str, '/glm/signals/', fn_signal), header = FALSE)
+      fn <- str_c(dir_stem_set_signals, fn_signal)
+      if (blockname_str == blockname_strs[1] && file.exists(fn)) file.remove(fn)
+      if (!file.exists(fn)) {
+        write_csv(df, fn, col_names = FALSE)
+      } else {
+        write.table(df, file = fn, sep = ',', col.names = FALSE, row.names = FALSE, append = TRUE)
+      }
+    }
+
+    nrow_sig <- nrow(df)
+
+    # append predictor files
+    for (fn_predictor in fn_predictors) {
+      df <- read.csv(str_c(dir_sessions, blockname_str, '/glm/', fn_predictor), header = FALSE)
+      fn <- str_c(dir_stem_set_pred, fn_predictor)
+      if (blockname_str == blockname_strs[1] && file.exists(fn)) file.remove(fn)
+      if (!file.exists(fn)) {
+        write_csv(df, fn, col_names = FALSE)
+      } else {
+        write.table(df, file = fn, sep = ',', col.names = FALSE, row.names = FALSE, append = TRUE)
+      }
+    }
+
+    nrow_pred <- nrow(df)
+
+    # build and append sample_info: row-level trial metadata aligned to signal rows
+    sample_info <- read.csv(str_c(dir_sessions, blockname_str, '/', blockname_str, '_data_prediction_matrix_full.csv')) %>%
+      select(blockname, trial_num, tm_bin) %>%
+      left_join(
+        read.csv(str_c(dir_sessions, blockname_str, '/', blockname_str, '_data_trial_summary.csv')) %>%
+          select(blockname, trial_num, trial_start_ts, spout, solution, trial_lick, lick_count),
+        by = join_by(blockname, trial_num)
+      )
+
+    fn <- str_c(dir_stem_set, 'sample_info.csv')
+    if (!file.exists(fn)) {
+      write_csv(sample_info, fn)
+    } else {
+      write.table(sample_info, file = fn, sep = ',', col.names = FALSE, row.names = FALSE, append = TRUE)
+    }
+
+    nrow_info <- nrow(sample_info)
+
+    print(str_c('  ~ ', blockname_str, '  sig/pred/info rows: ', nrow_sig, ' / ', nrow_pred, ' / ', nrow_info))
+  }
+}
+```

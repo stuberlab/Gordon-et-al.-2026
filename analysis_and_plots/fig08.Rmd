@@ -1,0 +1,758 @@
+---
+title: "fig08"
+author: "adam gordon-fennell"
+date: '2026-06-15'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = normalizePath('../'))
+```
+
+# setup
+## libraries
+```{r}
+library(tidyverse)
+library(afex)
+library(emmeans)
+library(janitor)
+library(broom)
+library(ggh4x)
+library(pals)
+library(patchwork)
+library(DescTools)
+library(arrow)
+library(readxl)
+
+source('./functions/params.R')
+source('./functions/theme.R')
+source('./functions/general.R')
+source('./functions/r_general.R')
+source('./functions/r_plots.R')
+source('./functions/stats.R')
+source('./functions/analysis_peth.R')
+```
+
+## directories
+```{r}
+dir_data   <- './data/fig08/'
+dir_output <- './analysis_and_plots/fig08/'
+
+dir.create(dir_output, recursive = TRUE, showWarnings = FALSE)
+```
+
+## local functions
+```{r}
+get_regionstim_label <- function(df){
+  join_regionstim_label <- tibble(
+    regionstim       = c('vta', 'nac', 'dms', 'dls', 'ts', 'all'),
+    regionstim_label = c('VTA', 'NAcCC', 'DMS', 'DLS', 'TS', 'All STR')
+  )
+  df %>%
+    left_join(join_regionstim_label, by = c('regionstim')) %>%
+    mutate(regionstim_label = factor(regionstim_label, levels = join_regionstim_label$regionstim_label))
+}
+```
+
+---
+
+# fa laser [fig08A-D]
+
+```{r eval=FALSE}
+color_laserstate <- c('#808080', '#00aeef')  # off=grey, on=blue
+
+plt_regions <- c('vta', 'nac', 'dms', 'dls', 'ts', 'all')
+plt_vars    <- c('mean_sesssion_lick_count', 'mean_bout_lick_count', 'mean_bout_n')
+
+summary_bout_session <- read.csv(str_c(dir_data, 'free_access_summary_data.csv')) %>%
+  mutate(regionstim = factor(regionstim, levels = plt_regions))
+```
+
+## fig08C: representative subject
+### left — cumulative session lick
+```{r eval=FALSE}
+dir_output_c <- str_c(dir_output, 'c/')
+dir.create(dir_output_c, recursive = TRUE, showWarnings = FALSE)
+
+plt_data_c_session <- read.csv(str_c(dir_data, 'free_access_rep_sbj_cummulative_session.csv'))
+
+shade_df <- tibble(
+  xmin = seq(0, 36, by = 4),
+  xmax = seq(2, 38, by = 4)
+)
+
+plt_data_c_session %>%
+  ggplot(aes(event_ts / 1000 / 60, cummulative_lick / 1000, color = blockname, group = blockname)) +
+  geom_rect(data = shade_df, aes(xmin = xmin, xmax = xmax, ymin = 0, ymax = 2.5),
+            inherit.aes = FALSE, fill = '#0075bf', alpha = 0.2) +
+  geom_line() +
+  theme_ag01() +
+  scale_color_manual(values = c('#0075bf', '#808285')) +
+  xlab('Time (min)') +
+  ylab('Cumulative lick count (x1k)') +
+  coord_cartesian(xlim = c(0, 40), ylim = c(0, 2.5), expand = F, clip = 'off') +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(2, 'cm'))
+
+save_pdf(dir_output_c, 'rep_sbj_cummulative_lick.pdf', h = 4, w = 4)
+```
+
+### right — cumulative block lick
+```{r eval=FALSE}
+plt_data_c_block <- read.csv(str_c(dir_data, 'free_access_rep_sbj_cummulative_block.csv'))
+
+plt <- plt_data_c_block %>%
+  mutate(time_rel = event_ts - tm_block_start) %>%
+  ggplot(aes(time_rel / 1000 / 60, cummulative_lick_block, color = blockname)) +
+  geom_line(aes(group = interaction(block_num, blockname))) +
+  facet_grid(. ~ interaction(laser_state, blockname)) +
+  scale_color_manual(values = c('#0075bf', '#808285')) +
+  theme_ag01() +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(1, 'cm'))
+
+plt %>%
+  add_scale_bar(c(-0.2, -20), 1, 100)
+
+save_pdf(dir_output_c, 'rep_sbj_cummulative_lick_block.pdf', h = 4, w = 12)
+```
+
+---
+
+## fig08D: summary — lick count and bout structure
+```{r eval=FALSE}
+dir_output_d <- str_c(dir_output, 'd/')
+dir.create(dir_output_d, recursive = TRUE, showWarnings = FALSE)
+
+plt_n_stats_licktriggered_fa_line <- function(summary_bout_session, plt_var, plt_region, dir_output){
+
+  prefix <- str_c(plt_region, '_', plt_var)
+
+  df <- summary_bout_session %>%
+    filter(regionstim == plt_region)
+
+  plt_line <- df %>%
+    ggplot(aes(laser_state, !!as.name(plt_var), color = group)) +
+    annotate("rect", xmin = 1.8, xmax = 2.2, ymin = -Inf, ymax = Inf, fill = color_laserstate[2], alpha = 1/3) +
+    geom_line(aes(group = subject), alpha = 1/3) +
+    stat_summary(fun = 'mean', geom = 'line', aes(group = group)) +
+    stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = group), width = 0) +
+    theme_ag01() +
+    scale_color_manual(values = c('#0075bf', '#808285'), guide = "none") +
+    facet_grid(regionstim ~ group)
+
+  plt_line <- plt_line %>%
+    remove_x_all()
+
+  plt_line_export <- plt_line +
+    theme(panel.spacing = unit(0.1, "cm")) +
+    force_panelsizes(rows = unit(1.0, 'cm'), cols = unit(0.5, 'cm'))
+
+  ggsave(
+    filename = str_c(dir_output, prefix, '_plt.pdf'),
+    plot     = plt_line_export,
+    width    = 2, height = 3, units = 'in', dpi = 300, useDingbats = FALSE
+  )
+
+  sbj_count <- summary_bout_session %>%
+    filter(regionstim == plt_region) %>%
+    select(group, subject) %>%
+    unique() %>%
+    group_by(group) %>%
+    summarise(n_sbj = n())
+
+  if(nrow(sbj_count) > 1 & min(sbj_count$n_sbj) > 1){
+    stats_summary <- aov_rm_one_between_one_within(
+      df            = df,
+      dir_output    = dir_output,
+      prefix        = prefix,
+      var_id        = 'subject',
+      var_dependent = plt_var,
+      var_between   = 'group',
+      var_within    = 'laser_state'
+    )
+  } else {
+    stats_summary <- replicate(3, data.frame(), simplify = FALSE)
+  }
+
+  return(list(plt = plt_line, stats = stats_summary))
+}
+```
+
+```{r eval=FALSE}
+nested <- map(plt_regions, function(reg) {
+  map(plt_vars, function(v) {
+    x <- plt_n_stats_licktriggered_fa_line(summary_bout_session, v, reg, dir_output_d)
+    list(
+      plt        = x$plt,
+      stats_main = x$stats[[2]] %>% mutate(region = reg, var = v) %>% select(region, var, everything()),
+      stats_hsd  = x$stats[[3]] %>% mutate(region = reg, var = v) %>% select(region, var, everything())
+    )
+  }) |> set_names(plt_vars)
+}) |> set_names(plt_regions)
+```
+
+```{r eval=FALSE}
+for(plt_var in plt_vars){
+  for(plt_region in plt_regions){
+
+    plt_loop <- nested[[plt_region]][[plt_var]]$plt
+    hsd_loop <- nested[[plt_region]][[plt_var]]$stats_hsd
+
+    y_range <- case_when(
+      plt_var == 'mean_sesssion_lick_count' ~ c(0, 2500),
+      plt_var == 'mean_bout_lick_count'     ~ c(0, 20),
+      plt_var == 'mean_bout_n'              ~ c(0, 400)
+    )
+
+    plt_loop <- plt_loop +
+      coord_cartesian(xlim = c(0.8, 2.2), ylim = y_range, expand = F, clip = 'off')
+
+    if(plt_region != plt_regions[[1]]){
+      plt_loop <- plt_loop %>% remove_y_all()
+    }
+
+    if(plt_var == plt_vars[[1]]){
+      title <- case_when(
+        plt_region == 'vta' ~ 'VTA',
+        plt_region == 'nac' ~ 'NAcCC',
+        plt_region == 'dms' ~ 'DMS',
+        plt_region == 'dls' ~ 'DLS',
+        plt_region == 'ts'  ~ 'TS',
+        plt_region == 'all' ~ 'All STR'
+      )
+      plt_loop <- plt_loop + ggtitle(title)
+    }
+
+    plt_loop <- plt_loop + theme(strip.text.y = element_blank())
+
+    if(plt_var != plt_vars[[1]]){
+      plt_loop <- plt_loop + theme(strip.text.x = element_blank())
+    } else {
+      plt_loop <- plt_loop + theme(
+        strip.text         = element_text(size = 6),
+        strip.text.x       = element_text(margin = margin(t = 5, b = 5)),
+        panel.spacing.x    = unit(1, "lines"),
+        strip.background   = element_blank(),
+        strip.clip         = "off"
+      )
+    }
+
+    if(plt_region == plt_regions[[1]]){
+      str_ylab <- case_when(
+        plt_var == 'mean_sesssion_lick_count' ~ 'Session lick count',
+        plt_var == 'mean_bout_lick_count'     ~ 'Bout lick count',
+        plt_var == 'mean_bout_n'              ~ 'Bout count'
+      )
+      plt_loop <- plt_loop + ylab(str_ylab)
+    } else {
+      plt_loop <- plt_loop + ylab('')
+    }
+
+    if(nrow(hsd_loop) > 0){
+      annotation_within <- hsd_loop %>%
+        filter(contrast1_between == contrast2_between) %>%
+        mutate(group = contrast1_between) %>%
+        mutate(sig_symbol = ifelse(sig_symbol == 'n.s.', '', sig_symbol)) %>%
+        select(group, sig_symbol)
+
+      y_pos <- y_range[2] * 0.92
+
+      plt_loop <- plt_loop +
+        geom_text(data = annotation_within, aes(label = sig_symbol), x = 1.5, y = y_pos, size = 4)
+    }
+
+    if(plt_region == plt_regions[[1]] & plt_var == plt_vars[[1]]){
+      plt_combined <- plt_loop
+    } else {
+      plt_combined <- plt_combined + plt_loop
+    }
+  }
+}
+
+plt_combined +
+  plot_layout(
+    ncol    = length(plt_regions),
+    nrow    = length(plt_vars),
+    widths  = unit(1, 'cm'),
+    heights = unit(1.5, 'cm')
+  )
+
+save_pdf(dir_output_d, 'analysis_summary.pdf', 6, 6)
+```
+
+---
+
+## summation analysis [text only — no paper figure]
+```{r eval=FALSE}
+summary_bout_session_summation <- summary_bout_session %>%
+  filter(!subject %in% c('aco07')) %>% # a fiber was excluded -> excluded for summation
+  filter(regionstim %in% c('nac', 'dms', 'dls', 'ts')) %>%
+  select(-regionstim) %>%
+  group_by(subject, group, laser_state) %>%
+  summarise_all(.funs = 'mean', .groups = drop) %>%
+  mutate(regionstim = 'summation') %>%
+  bind_rows(summary_bout_session, .)
+
+summary_bout_session_summation_delta <- summary_bout_session_summation %>%
+  gather(var_id, var_value, mean_sesssion_lick_count:mean_bout_n) %>%
+  select(subject, group, regionstim, laser_state, var_id, var_value) %>%
+  spread(laser_state, var_value) %>%
+  mutate(delta = on - off)
+```
+
+```{r eval=FALSE}
+dir_output_summation <- str_c(dir_output, 'summation/')
+dir.create(dir_output_summation, recursive = TRUE, showWarnings = FALSE)
+
+
+plt_data_sum <- summary_bout_session_summation %>%
+  filter(group == 'ChR2') %>%
+  filter(regionstim %in% c('all', 'summation')) 
+
+
+plt_id <- 'fa_stim_all_vs_summation_delta'
+
+plt_data_sum2 <- plt_data_sum %>%
+  select(subject, laser_state, regionstim, mean_sesssion_lick_count) %>%
+  spread(laser_state, mean_sesssion_lick_count) %>%
+  mutate(delta = on - off)
+
+plt_data_sum2 %>%
+  mutate(regionstim = ifelse(regionstim == 'all', 'All STR', 'Summation')) %>%
+  mutate(regionstim = factor(regionstim, levels = c('All STR', 'Summation'))) %>%
+  ggplot(aes(regionstim, delta, group = 1)) +
+  geom_hline(yintercept = 0, linewidth = 1/2, color = 'darkgrey') +
+  geom_line(aes(group = subject), alpha = 1/2) +
+  stat_summary(fun = 'mean', geom = 'line') +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0) +
+  theme_ag01() +
+  coord_cartesian(xlim = c(0.8, 2.2), ylim = c(-500, 500), expand = F, clip = 'off') +
+  theme(
+    axis.text.x  = element_text(angle = 45, hjust = 1, vjust = 1),
+    axis.title.x = element_blank()
+  ) +
+  ylab('Delta licking (on - off)') +
+  force_panelsizes(rows = unit(3, 'cm'), cols = unit(1, 'cm'))
+
+save_pdf(dir_output_summation, 'delta_licking.pdf', h = 4, w = 4)
+
+plt_data_sum2 %>%
+  select(subject, regionstim, delta) %>%
+  spread(regionstim, delta) %>%
+  tidy_ttest_paired(dir_output_summation, 'delta_licking', 'all', 'summation')
+
+mean_summary <- plt_data_sum2 %>%
+  group_by(regionstim) %>%
+  summarise(
+    delta_sem = sd(delta)/sqrt(n()),
+    delta_mean = delta %>% mean()
+  )
+
+mean_summary %>% write_csv(str_c(dir_output_summation, 'delta_licking_means.csv'))
+```
+
+---
+
+# brief access laser [fig08E-H]
+
+```{r eval=FALSE}
+color_laserstate <- c('#00aeef', '#808080')  # laser=blue, no_laser=grey
+
+plt_regions <- c('vta', 'nac', 'dms', 'dls', 'ts', 'all')
+plt_vars    <- c('trial_lick_count', 'trial_lick_prop')
+
+summary_trial_laser <- read.csv(str_c(dir_data, 'brief_access_summary_data.csv')) %>%
+  mutate(laser_state = factor(laser_state, levels = c('no_laser', 'laser'))) %>%
+  mutate(regionstim  = factor(regionstim,  levels = plt_regions))
+```
+
+## fig08F: representative subject raster
+```{r eval=FALSE}
+dir_output_f <- str_c(dir_output, 'f/')
+dir.create(dir_output_f, recursive = TRUE, showWarnings = FALSE)
+
+plt_data_f <- read.csv(str_c(dir_data, 'brief_access_rep_sbj_raster_data.csv'))
+
+shade_df <- tibble(
+  ymin = seq(10, 90,  by = 20),
+  ymax = seq(20, 100, by = 20)
+)
+
+plt <- plt_data_f %>%
+  mutate(event_unique = row_number()) %>%
+  mutate(trial_num  = trial_num - 1) %>%
+  mutate(y_dummy    = trial_num + 1) %>%
+  gather('id', 'y_pos', trial_num, y_dummy) %>%
+  ggplot(aes(event_ts_rel, y_pos, color = group, group = event_unique)) +
+  geom_rect(data = shade_df, aes(ymin = ymin, ymax = ymax, xmin = 0, xmax = 3000),
+            inherit.aes = FALSE, fill = '#0075bf', alpha = 0.2) +
+  geom_line() +
+  scale_color_manual(values = color_laserstate) +
+  facet_grid(. ~ group) +
+  theme_ag01() +
+  coord_cartesian(xlim = c(0, 3000), ylim = c(0, 100), expand = F, clip = 'off') +
+  force_panelsizes(rows = unit(6, 'cm'), cols = unit(3, 'cm'))
+
+plt %>%
+  add_scale_bar(c(-100, -5), 1000, 10)
+
+save_pdf(dir_output_f, 'rep_sbj_raster.pdf', h = 4, w = 12)
+```
+
+---
+
+## fig08G: summary — trial lick count and lick proportion
+```{r eval=FALSE}
+dir_output_g <- str_c(dir_output, 'g/')
+dir.create(dir_output_g, recursive = TRUE, showWarnings = FALSE)
+
+plt_n_stats_licktriggered_ba_line <- function(summary_trial_laser, plt_var, plt_region, dir_output){
+
+  prefix <- str_c(plt_region, '_', plt_var)
+
+  df <- summary_trial_laser %>%
+    mutate(laser_state = factor(laser_state, levels = c('no_laser', 'laser'))) %>%
+    filter(regionstim == plt_region)
+
+  plt_line <- df %>%
+    ggplot(aes(laser_state, !!as.name(plt_var), color = group)) +
+    annotate("rect", xmin = 1.8, xmax = 2.2, ymin = -Inf, ymax = Inf, fill = color_laserstate[1], alpha = 1/3) +
+    geom_line(aes(group = subject), size = 1/2, alpha = 1/3) +
+    stat_summary(fun = 'mean', geom = 'line', size = 1/2, aes(group = group)) +
+    stat_summary(fun.data = 'mean_se', geom = 'errorbar', size = 1/2, aes(group = group), width = 0) +
+    scale_color_manual(values = c('#0075bf', '#808285'), guide = "none") +
+    theme_ag01() +
+    facet_grid(regionstim ~ group)
+
+  plt_line_export <- plt_line +
+    force_panelsizes(rows = unit(3, 'cm'), cols = unit(0.5, 'cm'))
+
+  ggsave(
+    filename = str_c(dir_output, prefix, '_plt.pdf'),
+    plot     = plt_line_export,
+    width    = 2, height = 3, units = 'in', dpi = 300, useDingbats = FALSE
+  )
+
+  sbj_count <- summary_trial_laser %>%
+    filter(regionstim == plt_region) %>%
+    select(group, subject) %>%
+    unique() %>%
+    group_by(group) %>%
+    summarise(n_sbj = n())
+
+  if(nrow(sbj_count) > 1 & min(sbj_count$n_sbj) > 1){
+    stats_summary <- aov_rm_one_between_one_within(
+      df            = df,
+      dir_output    = dir_output,
+      prefix        = prefix,
+      var_id        = 'subject',
+      var_dependent = plt_var,
+      var_between   = 'group',
+      var_within    = 'laser_state'
+    )
+  } else {
+    stats_summary <- replicate(3, data.frame(), simplify = FALSE)
+  }
+
+  return(list(plt = plt_line, stats = stats_summary))
+}
+```
+
+```{r eval=FALSE}
+nested <- map(plt_regions, function(reg) {
+  map(plt_vars, function(v) {
+    x <- plt_n_stats_licktriggered_ba_line(summary_trial_laser, v, reg, dir_output_g)
+    list(
+      plt        = x$plt,
+      stats_main = x$stats[[2]] %>% mutate(region = reg, var = v) %>% select(region, var, everything()),
+      stats_hsd  = x$stats[[3]] %>% mutate(region = reg, var = v) %>% select(region, var, everything())
+    )
+  }) |> set_names(plt_vars)
+}) |> set_names(plt_regions)
+```
+
+```{r eval=FALSE}
+for(plt_var in plt_vars){
+  for(plt_region in plt_regions){
+
+    plt_loop <- nested[[plt_region]][[plt_var]]$plt
+    hsd_loop <- nested[[plt_region]][[plt_var]]$stats_hsd
+
+    y_range <- case_when(
+      plt_var == 'trial_lick_count' ~ c(0, 20),
+      plt_var == 'trial_lick_prop'  ~ c(0, 1)
+    )
+
+    plt_loop <- plt_loop +
+      coord_cartesian(xlim = c(0.8, 2.2), ylim = y_range, expand = F)
+
+    if(plt_region != plt_regions[[1]]){
+      plt_loop <- plt_loop %>% remove_y_all()
+    }
+
+    if(plt_var == plt_vars[[1]]){
+      title <- case_when(
+        plt_region == 'vta' ~ 'VTA',
+        plt_region == 'nac' ~ 'NAcCC',
+        plt_region == 'dms' ~ 'DMS',
+        plt_region == 'dls' ~ 'DLS',
+        plt_region == 'ts'  ~ 'TS',
+        plt_region == 'all' ~ 'STR'
+      )
+      plt_loop <- plt_loop + ggtitle(title)
+    }
+
+    plt_loop <- plt_loop + theme(strip.text.y = element_blank())
+
+    if(plt_var != plt_vars[[1]]){
+      plt_loop <- plt_loop + theme(strip.text.x = element_blank())
+    } else {
+      plt_loop <- plt_loop + theme(
+        strip.text         = element_text(size = 6),
+        strip.text.x       = element_text(margin = margin(t = 5, b = 5)),
+        panel.spacing.x    = unit(1, "lines"),
+        strip.background   = element_blank(),
+        strip.clip         = "off"
+      )
+    }
+
+    if(plt_region == plt_regions[[1]]){
+      str_ylab <- case_when(
+        plt_var == 'trial_lick_count' ~ 'Trial lick count',
+        plt_var == 'trial_lick_prop'  ~ 'Proportion of trials\nwith lick'
+      )
+      plt_loop <- plt_loop + ylab(str_ylab)
+    } else {
+      plt_loop <- plt_loop + ylab('')
+    }
+
+    if(nrow(hsd_loop) > 0){
+      annotation_within <- hsd_loop %>%
+        filter(contrast1_between == contrast2_between) %>%
+        mutate(group = contrast1_between) %>%
+        mutate(sig_symbol = ifelse(sig_symbol == 'n.s.', '', sig_symbol)) %>%
+        select(group, sig_symbol)
+
+      y_pos <- y_range[2] * 0.92
+
+      plt_loop <- plt_loop +
+        geom_text(data = annotation_within, aes(label = sig_symbol), x = 1.5, y = y_pos, size = 4)
+      
+      plt_loop <- plt_loop %>%
+        remove_x_all()
+    }
+
+    if(plt_region == plt_regions[[1]] & plt_var == plt_vars[[1]]){
+      plt_combined <- plt_loop
+    } else {
+      plt_combined <- plt_combined + plt_loop
+    }
+  }
+}
+
+plt_combined +
+  plot_layout(
+    ncol    = length(plt_regions),
+    nrow    = length(plt_vars),
+    widths  = unit(1, 'cm'),
+    heights = unit(1.5, 'cm'),
+    guides  = 'collect'
+  )
+
+save_pdf(dir_output_g, 'analysis_summary.pdf', 12, 6)
+```
+
+---
+
+## fig08H: change over block — P(lick)
+```{r eval=FALSE}
+dir_output_h <- str_c(dir_output, 'h/')
+dir.create(dir_output_h, recursive = TRUE, showWarnings = FALSE)
+
+regionstim_levels_h <- c('VTA', 'NAcCC', 'DMS', 'DLS', 'TS', 'STR')
+
+df_summary <- read.csv(str_c(dir_data, 'brief_access_trial_data.csv')) %>%
+  rename(trial_lick = p_lick) %>%
+  mutate(regionstim = factor(regionstim, levels = regionstim_levels_h))
+```
+
+```{r eval=FALSE}
+# [fig08h]
+df_summary %>%
+  ggplot(aes(trial_num_block, trial_lick, color = group, fill = group, alpha = laser_state)) +
+  stat_summary(fun = 'mean', geom = 'line', aes(group = interaction(group, laser_state))) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = interaction(group, laser_state)), width = 0) +
+  facet_grid(group ~ regionstim) +
+  scale_color_manual(values = c('#0075bf', '#808285')) +
+  scale_fill_manual(values  = c('#0075bf', '#808285')) +
+  scale_alpha_discrete(range = c(1, 0.5)) +
+  ylab('P(lick)') +
+  xlab('Block trial') +
+  theme_ag01(6) +
+  coord_cartesian(ylim = c(0.5, 1), xlim = c(1, 10), expand = F, clip = 'off') +
+  scale_x_continuous(breaks = c(1, 10)) +
+  scale_y_continuous(breaks = c(0.5, 0.75, 1.0)) +
+  theme(panel.spacing.x = unit(1, "lines"), panel.spacing.y = unit(1, "lines")) +
+  force_panelsizes(rows = unit(1, 'cm'), cols = unit(1.4, 'cm'))
+
+save_pdf(dir_output_h, 'analysis_bintrials_plick.pdf', h = 3, w = 7)
+```
+
+---
+
+# DA correlation with initiation [text only — no paper figure]
+
+## logs / keys
+```{r eval=FALSE}
+log_analysis_subjects <- read_xlsx('./logs_and_keys/log_data_analysis.xlsx', sheet = 'subjects', na = c('NA', ''))
+log_analysis_fp       <- read_xlsx('./logs_and_keys/log_data_analysis.xlsx', sheet = 'fp',       na = c('NA', ''))
+log_placements        <- read.csv('./logs_and_keys/log_fiber_placements.csv', na.strings = c('', 'NA'))
+
+subjects <- log_analysis_subjects %>%
+  filter(inclusion_consumption == 1) %>%
+  pull(subject)
+
+log_data <- log_analysis_fp %>%
+  filter(exclude != 1 | is.na(exclude)) %>%
+  filter(subject %in% subjects) %>%
+  get_set_id() %>%
+  filter(set_id == 'wrnacl')
+```
+
+## preprocessing
+```{r eval=FALSE}
+# requires: data/sessions/<blockname>/<blockname>_streams_peth_preprocessed.feather
+#           data/sessions/<blockname>/<blockname>_data_trial_summary.csv
+#           data/sessions/<blockname>/<blockname>_quality_metrics.csv
+#           log_analysis_fp (blockname, set_id)
+#           log_analysis_subjects (inclusion_consumption, remove)
+#           log_placements (exclude_da_consumption)
+# output:   fig08/corr_initiation/pre/df_peth_summary_combined.csv
+# NOTE: comment out after fig08/corr_initiation/pre/ CSVs have been generated
+
+toggle_process <- 0
+
+dir_output_corr     <- str_c(dir_output, 'corr_initiation/')
+dir_output_corr_pre <- str_c(dir_output_corr, 'pre/')
+dir.create(dir_output_corr_pre, recursive = TRUE, showWarnings = FALSE)
+
+peth_tm_bins <- tibble(
+  tm_bin_id    = c('access'),
+  tm_bin_start = c(       0),
+  tm_bin_end   = c(       3)
+)
+
+grouping_vars <- c('blockname', 'region', 'trial_num', 'time_bin')
+
+if (toggle_process) {
+  fns_qc_metrics      <- list.files('./data/sessions/', pattern = 'quality_metrics.csv', recursive = TRUE, full.names = TRUE)
+  combined_qc_metrics <- bind_rows(lapply(fns_qc_metrics, read.csv))
+
+  bns <- log_data %>%
+    pull(blockname)
+
+  for (bn in bns) {
+    df_peth <- read_feather(str_c('./data/sessions/', bn, '/', bn, '_streams_peth_preprocessed.feather')) %>%
+      filter(event_id_char %in% c('access_period', 'spout_extended')) %>%
+      left_join(log_data %>% select(blockname, subject), by = 'blockname') %>%
+      filter_qc_metrics(combined_qc_metrics, removal_type = 1) %>%
+      get_region_labels() %>%
+      filter_placements('exclude_da_consumption')
+
+    df_trial <- read.csv(str_c('./data/sessions/', bn, '/', bn, '_data_trial_summary.csv')) %>%
+      select(blockname, trial_num, solution, lick_count, lick_ts_first, trial_lick) %>%
+      mutate(
+        trial_lick_lead    = trial_lick    %>% lead(),
+        lick_ts_first_lead = lick_ts_first %>% lead()
+      ) %>%
+      select(-trial_lick, -lick_ts_first)
+
+    df_peth_summary <- df_peth %>%
+      rename(trial_num = event_number) %>%
+      get_peth_binned_summary(peth_tm_bins, grouping_vars)
+
+    suppressMessages(
+      df_peth_summary <- df_peth_summary %>%
+        left_join(df_trial, by = c('blockname', 'trial_num')) %>%
+        left_join(log_data %>% select(blockname, set_id), by = 'blockname') %>%
+        format_set_id(key_set_id) %>%
+        select(set_id, everything())
+    )
+
+    if (bn == bns[1]) {
+      df_peth_summary_combined <- df_peth_summary
+    } else {
+      df_peth_summary_combined <- bind_rows(df_peth_summary_combined, df_peth_summary)
+    }
+  }
+
+  df_peth_summary_combined %>%
+    filter(!region %>% str_detect('LHA')) %>%
+    write_csv(str_c(dir_output_corr_pre, 'df_peth_summary_combined.csv'))
+} else {
+  df_peth_summary_combined <- read.csv(str_c(dir_output_corr_pre, 'df_peth_summary_combined.csv'))
+}
+
+```
+
+## sustained DA vs lick on next trial
+```{r eval=FALSE}
+df2 <- df_peth_summary_combined %>%
+  filter(!is.na(trial_lick_lead)) %>%
+  left_join(log_data %>% select(blockname, subject), by = 'blockname') 
+```
+
+```{r eval=FALSE}
+coef_by_region <- df2 %>%
+  filter(set_id == 'WR:NaCl') %>%
+  group_by(region) %>%
+  group_modify(~{
+    m <- glm(trial_lick_lead ~ zscore_blsub_mean, data = .x, family = binomial())
+    tidy(m, conf.int = TRUE, exponentiate = TRUE)
+  }) %>%
+  ungroup()
+
+coef_by_region <- coef_by_region %>%
+  rename(odds_ratio = estimate,
+         or_low     = conf.low,
+         or_high    = conf.high) %>%
+  clean_names() %>%
+  mutate(region = factor(region, unique(key_regions$region_label)))
+
+trial_counts <- df2 %>%
+  filter(set_id == 'WR:NaCl') %>%
+  filter(!region %>% str_detect('LHA')) %>%
+  group_by(region) %>%
+  summarise(
+    n_trials   = n(),
+    n_subjects = n_distinct(subject)
+  ) %>%
+  mutate(region = factor(region, unique(key_regions$region_label))) %>%
+  arrange(region)
+
+coef_by_region <- coef_by_region %>%
+  left_join(trial_counts, by = join_by(region)) %>%
+  mutate(region = region %>% factor(levels = key_regions$region_label %>% unique())) %>%
+  arrange(region, term)
+
+coef_by_region %>%
+  write_csv(str_c(dir_output_corr, 'coef_by_region.csv'))
+
+coef_by_region %>%
+  filter(term == 'zscore_blsub_mean') %>%
+  quick_sig() %>%
+  mutate(p_value_fmt = formatC(p_value, format = 'e', digits = 2)) %>%
+  mutate(odds_ratio = odds_ratio %>% round(2)) %>%
+  ggplot() +
+  geom_text(aes(region, 0, label = odds_ratio)) +
+  geom_text(aes(region, 1, label = p_value_fmt)) +
+  geom_text(aes(region, 2, label = sig_symbol)) +
+  geom_text(aes(region, 3, label = n_subjects)) +
+  geom_text(aes(region, 4, label = n_trials)) +
+  scale_y_continuous(
+    breaks = c(0, 1, 2, 3, 4),
+    labels = c('or', 'p', 'sig', 'n subj', 'n trials')
+  )
+
+save_pdf(dir_output_corr, 'coef_by_region_summary.pdf', h = 3, w = 6)
+```

@@ -1,0 +1,734 @@
+---
+title: "sfig10"
+author: "adam gordon-fennell"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = normalizePath('../'))
+```
+
+# setup
+## libraries
+```{r eval=FALSE}
+source('./logs_and_keys/key_local_directories.R')
+Sys.unsetenv("RETICULATE_PYTHON_FALLBACK")
+Sys.unsetenv("RETICULATE_PYTHON")
+reticulate::use_python(path_python, required = TRUE)
+
+
+library(tidyverse)
+library(afex)
+library(emmeans)
+library(janitor)
+library(readxl)
+library(ggh4x)
+library(arrow)
+library(zoo)
+library(lubridate)
+library(patchwork)
+library(ggbeeswarm)
+library(ggpubr)
+library(pals)
+library(boot)
+library(corrplot)
+library(Hmisc)
+library(plotly)
+library(pracma)
+
+arrow::set_cpu_count(4)
+
+source('./functions/params.R')
+source('./functions/theme.R')
+source('./functions/general.R')
+source('./functions/r_general.R')
+source('./functions/r_plots.R')
+source('./functions/stats.R')
+source('./functions/pca.R')
+source('./functions/analysis_peth.R')
+source('./functions/plotting_placements.R')
+source('./functions/compile_data.R')
+source('./functions/r_head_fixed_processing.R')
+```
+
+## directories
+```{r eval=FALSE}
+dir_output         <- './analysis_and_plots/sfig10/'
+dir_output_pre     <- str_c(dir_output, 'pre/')
+dir_combined_setid <- './data/combined_setid/'
+
+dir.create(dir_output,     recursive = TRUE, showWarnings = FALSE)
+dir.create(dir_output_pre, recursive = TRUE, showWarnings = FALSE)
+```
+
+## logs / keys
+```{r eval=FALSE}
+log_analysis_fp_ets   <- read_xlsx('./logs_and_keys/log_data_analysis.xlsx',
+                                   sheet = 'fp_ets', na = c('NA', ''))
+log_analysis_subjects <- read_xlsx('./logs_and_keys/log_data_analysis.xlsx',
+                                   sheet = 'subjects', na = c('NA', ''))
+log_analysis_exp      <- read_xlsx('./logs_and_keys/log_data_analysis.xlsx',
+                                   sheet = 'experiments', na = c('NA', ''))
+log_placements        <- read.csv('./logs_and_keys/log_fiber_placements.csv',
+                                  na.strings = c('', 'NA'))
+
+key_events            <- read.csv('./logs_and_keys/key_events_arduino.csv')
+log_tdt               <- read.csv('./logs_and_keys/log_fiberphotometry_tdt.csv',
+                                   na = c('', 'NA'))
+log_npm               <- read.csv('./logs_and_keys/log_fiberphotometry_npm.csv',
+                                   na = c('', 'NA'))
+```
+
+## local functions
+```{r eval=FALSE}
+return_stim_params <- function(import_fns, dir_extracted, file_format_output) {
+  # takes extracted serial data and returns stim parameters for individual
+  # stimulation events
+  #
+  # import_fns (vector of strings): vector of blocknames used for combined_import
+  # dir_extracted (string): path to the directory for serial extraction
+  # file_format_output (string): 'csv'
+  #
+  # output: stim_params — 1 row / stimulation with columns for each parameter
+
+  data_list <- combined_import(
+    import_directory = dir_extracted,
+    filter_strings   = import_fns,
+    prefixes         = NA,
+    suffixes         = c(str_c('_param_dynamic.', file_format_output))
+  )
+
+  stim_params <- data_list[[1]] %>%
+    select(blockname, param_dynamic, param_ts, param_value) %>%
+    filter(param_dynamic %in% c('trial_stim_frequency',
+                                'trial_stim_pulse_duration',
+                                'trial_stim_train_duration')) %>%
+    arrange(blockname, param_ts) %>%
+    spread(param_dynamic, param_value) %>%
+    group_by(blockname) %>%
+    mutate(stim_num = row_number())
+
+  return(stim_params)
+}
+```
+
+---
+
+# initial preprocessing steps
+
+## directories (temp and network)
+```{r eval=FALSE}
+# dir_tdt, dir_npm, dir_arduino_raw set in key_local_directories.R
+dir_temp             <- './data/sfig10/'
+dir_temp_arduino_raw <- str_c(dir_temp, 'arduino/raw/')
+dir_temp_extracted   <- str_c(dir_temp, 'arduino/extracted/')
+dir_temp_sessions    <- str_c(dir_temp, 'sessions/')
+
+dir.create(dir_temp_arduino_raw, recursive = TRUE, showWarnings = FALSE)
+dir.create(dir_temp_extracted,   recursive = TRUE, showWarnings = FALSE)
+dir.create(dir_temp_sessions,    recursive = TRUE, showWarnings = FALSE)
+```
+
+## arduino behavioral data
+```{r eval=FALSE}
+# requires: access to dir_arduino_raw; log_analysis_fp_ets (blockname column)
+# output:   data/sfig10/arduino/raw/   (raw arduino CSVs)
+#           data/sfig10/arduino/extracted/  (event, param, param_dynamic CSVs)
+# 
+# manual_blocknames <- log_analysis_fp_ets %>% pull(blockname)
+# 
+# import_arduino(manual_blocknames, dir_arduino_raw, dir_temp_arduino_raw, overwrite = 0)
+# 
+# extract_serial_output(
+#   dir_temp_arduino_raw,
+#   key_events,
+#   dir_temp_extracted,
+#   manual_experiments = NA,
+#   manual_blocknames  = manual_blocknames,
+#   file_format_output = 'csv',
+#   overwrite = 0
+# )
+```
+
+## FP data — save locally and preprocess
+```{r eval=FALSE}
+# requires: access to dir_tdt / dir_npm; arduino extraction complete (above)
+# output:   data/sfig10/sessions/  (feather + csv per session)
+# 
+# import_key <- log_analysis_fp_ets %>%
+#   select(experiment, subject, blockname, procedure, deprivation, imaging) %>%
+#   left_join(log_analysis_exp, by = 'experiment')
+# 
+# import_key_filt <- import_key %>%
+#   filter(experiment %in% c('acp', 'acr'))
+# 
+# locally_save_multispout_data_behavior(
+#   import_key_filt, dir_temp_sessions, overwrite = 0)
+# 
+# locally_save_multispout_data_fp_peth(
+#   import_key_filt, dir_temp_sessions, dir_tdt, dir_npm, overwrite = 0)
+# 
+# locally_save_multispout_data_fp_baseline(
+#   import_key_filt, dir_temp_sessions, dir_tdt, dir_npm,
+#   blockname_baselines = NA, overwrite = 0)
+# 
+# multispout_preprocess_fp_peth(
+#   import_key_filt, dir_temp_sessions, log_tdt, log_npm)
+# 
+# multispout_preprocess_fp_baseline(
+#   import_key_filt, dir_temp_sessions, log_tdt, log_npm)
+```
+
+---
+
+# preprocessing
+```{r eval=FALSE}
+# requires: data/sfig10/sessions/ (feather + fp_events.csv per session)
+#           data/sfig10/arduino/extracted/ (param_dynamic CSVs for stim params)
+#           log_analysis_fp_ets (blockname, trials columns)
+#           log_analysis_subjects (remove column)
+#           log_placements (exclude_da_consumption, hit_ap/ml/dv columns)
+# output:   sfig10/pre/data_streams_peth_full.csv
+#           sfig10/pre/data_streams_peth_summary.csv
+#           sfig10/pre/data_streams_peth_summary_group.csv
+#           sfig10/pre/data_streams_peth_summary_trace_subject.csv
+#           sfig10/pre/data_streams_peth_summary_trace_group.csv
+#           sfig10/pre/data_events.csv
+#           sfig10/pre/str_consumption_sustained.csv
+# NOTE: comment out this entire section after sfig10/pre/ CSVs have been generated
+#       and data/sfig10/ can be deleted
+#
+# dir.create(dir_output_pre, recursive = TRUE, showWarnings = FALSE)
+# 
+# manual_blocknames <- log_analysis_fp_ets %>% pull(blockname)
+# 
+# # ── 1. stim parameters from extracted arduino data ────────────────────────────
+# stim_params <- return_stim_params(
+#   manual_blocknames, dir_temp_extracted, file_format_output = 'csv') %>%
+#   select(blockname, event_number_arduino = stim_num, trial_stim_frequency)
+# 
+# # ── 2. read FP peth feather files ─────────────────────────────────────────────
+# file_paths <- list.files(dir_temp_sessions,
+#                          pattern = '_streams_peth_preprocessed.feather',
+#                          recursive = TRUE, full.names = TRUE)
+# 
+# file_paths <- file_paths %>%
+#   keep(~ str_detect(.x, str_c(manual_blocknames, collapse = '|')))
+# 
+# for (file_path in file_paths) {
+#   loop_streams_peth <- read_feather(file_path) %>%
+#     mutate(signal_wavelength = signal_wavelength %>% as.character()) %>%
+#     ungroup()
+# 
+#   loop_events <- read.csv(
+#     file_path %>% str_replace('_streams_peth_preprocessed.feather', '_fp_events.csv'))
+# 
+#   if (file_path == file_paths[1]) {
+#     streams_peth <- loop_streams_peth
+#     events       <- loop_events
+#   } else {
+#     streams_peth <- loop_streams_peth %>% bind_rows(streams_peth, .)
+#     events       <- loop_events       %>% bind_rows(events, .)
+#   }
+# }
+# 
+# # ── 3. trim peth time range ───────────────────────────────────────────────────
+# streams_peth <- streams_peth %>%
+#   filter(time_rel > -3, time_rel < 12)
+# 
+# # ── 4. parse trial mA from log ────────────────────────────────────────────────
+# trial_ids <- log_analysis_fp_ets %>%
+#   select(blockname, trials) %>%
+#   mutate(trials = str_remove_all(trials, '[//{//};]')) %>%
+#   mutate(trials = str_split(trials, ',')) %>%
+#   unnest_longer(trials, values_to = 'stim_id') %>%
+#   mutate(stim_id = as.integer(stim_id)) %>%
+#   group_by(blockname) %>%
+#   mutate(event_number = row_number()) %>%
+#   ungroup() %>%
+#   mutate(mA = case_when(
+#     stim_id == 0 ~ 0,
+#     stim_id == 1 ~ 0.05,
+#     stim_id == 2 ~ 0.5
+#   ))
+# 
+# # ── 5. join mA to streams_peth and events ────────────────────────────────────
+# streams_peth <- streams_peth %>%
+#   left_join(trial_ids %>% select(blockname, event_number, mA),
+#             by = c('blockname', 'event_number'))
+# 
+# events <- events %>%
+#   filter(event_id_char == 'trial_start') %>%
+#   left_join(trial_ids %>% select(blockname, event_number, mA),
+#             by = c('blockname', 'event_number'))
+# 
+# # ── 6. subject, region formatting, placement and subject filters ──────────────
+# streams_peth <- streams_peth %>%
+#   mutate(subject = blockname %>% str_sub(12, 16)) %>%
+#   format_regions('region', key_regions) %>%
+#   filter_placements('exclude_da_consumption')
+# 
+# subjects_to_remove <- log_analysis_subjects %>%
+#   filter(remove == 1) %>%
+#   pull(subject)
+# 
+# streams_peth <- streams_peth %>%
+#   filter(!subject %in% subjects_to_remove)
+# 
+# events <- events %>%
+#   mutate(subject = blockname %>% str_sub(12, 16)) %>%
+#   filter(!subject %in% subjects_to_remove)
+# 
+# # ── 7. compute summaries ──────────────────────────────────────────────────────
+# analysis_summary_range <- 5
+# 
+# streams_peth_summary <- streams_peth %>%
+#   filter(time_rel > 0, time_rel < analysis_summary_range) %>%
+#   group_by(blockname, subject, mA, region) %>%
+#   summarise(zscore_blsub = mean(zscore_blsub), .groups = 'drop')
+# 
+# streams_peth_summary_group <- streams_peth_summary %>%
+#   group_by(mA, region) %>%
+#   summarise(zscore_blsub = mean(zscore_blsub), .groups = 'drop')
+# 
+# streams_peth <- streams_peth %>%
+#   mutate(region = region %>% factor(levels = key_regions$region_label %>% unique()))
+# 
+# streams_peth_summary <- streams_peth_summary %>%
+#   mutate(region = region %>% factor(levels = key_regions$region_label %>% unique()))
+# 
+# streams_peth_summary_group <- streams_peth_summary_group %>%
+#   mutate(region = region %>% factor(levels = key_regions$region_label %>% unique()))
+# 
+# streams_peth_subject <- streams_peth %>%
+#   mutate(time_rel = round_down_to_nearest_05(time_rel)) %>%
+#   group_by(subject, region, time_rel, mA) %>%
+#   summarise(zscore_blsub = mean(zscore_blsub), .groups = 'drop')
+# 
+# streams_peth_group <- streams_peth %>%
+#   mutate(time_rel = round_down_to_nearest_05(time_rel)) %>%
+#   group_by(region, time_rel, mA) %>%
+#   summarise(
+#     zscore_blsub_sem = sd(zscore_blsub) / sqrt(n()),
+#     zscore_blsub     = mean(zscore_blsub),
+#     .groups = 'drop')
+# 
+# # ── 8. assemble consumption sustained data ────────────────────────────────────
+# fns_filt <- list.files(dir_combined_setid) %>%
+#   keep(~ str_detect(.x, 'filtlick_peth_summary_means_subject')) %>%
+#   keep(~ str_detect(.x, str_c(c('wrnacl','wrsuc','frsuc'), collapse = '|'))) %>%
+#   str_remove('.csv')
+# 
+# str_consumption <- combined_import(
+#   import_directory = dir_combined_setid,
+#   filter_strings   = fns_filt,
+#   prefixes         = NA,
+#   suffixes         = c('.csv'),
+#   verbose          = 0
+# )[[1]] %>%
+#   filter(time_bin == 'sustained') %>%
+#   filter(!region %>% str_detect('LHA')) %>%
+#   select(set_id, subject, region, solution, zscore_blsub_mean)
+# 
+# # ── 9. write all preprocessed files ──────────────────────────────────────────
+# streams_peth %>%
+#   select(blockname, subject, branch_id, region, time, time_rel,
+#          event_number, mA, zscore_blsub) %>%
+#   write_csv(str_c(dir_output_pre, 'data_streams_peth_full.csv'))
+# 
+# streams_peth_summary %>%
+#   write_csv(str_c(dir_output_pre, 'data_streams_peth_summary.csv'))
+# 
+# streams_peth_summary_group %>%
+#   write_csv(str_c(dir_output_pre, 'data_streams_peth_summary_group.csv'))
+# 
+# streams_peth_subject %>%
+#   write_csv(str_c(dir_output_pre, 'data_streams_peth_summary_trace_subject.csv'))
+# 
+# streams_peth_group %>%
+#   write_csv(str_c(dir_output_pre, 'data_streams_peth_summary_trace_group.csv'))
+# 
+# events %>%
+#   write_csv(str_c(dir_output_pre, 'data_events.csv'))
+# 
+# str_consumption %>%
+#   write_csv(str_c(dir_output_pre, 'str_consumption_sustained.csv'))
+```
+
+---
+
+# data import
+```{r eval=FALSE}
+streams_peth <- read.csv(str_c(dir_output_pre, 'data_streams_peth_full.csv')) %>%
+  mutate(region = region %>% factor(levels = key_regions$region_label %>% unique()))
+
+streams_peth_group <- read.csv(
+  str_c(dir_output_pre, 'data_streams_peth_summary_trace_group.csv')) %>%
+  mutate(region = region %>% factor(levels = key_regions$region_label %>% unique()))
+```
+
+---
+
+## sfig10b: PETH region overlay (0.5 mA)
+```{r eval=FALSE}
+dir_output_b <- str_c(dir_output, 'b/')
+dir.create(dir_output_b, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_b <- 'ets_peth_overlay'
+
+plt_data_b <- streams_peth_group %>%
+  filter(mA == 0.5) %>%
+  filter(time_rel > -3, time_rel < 12) %>%
+  mutate(facet_regions = ifelse(region %>% str_detect('LHA'), 'lha', 'str'))
+```
+
+```{r eval=FALSE}
+plt <- plt_data_b %>%
+  ggplot(aes(time_rel, zscore_blsub, color = region, fill = region)) +
+  annotate('rect', xmin = 0, xmax = 1, ymin = -Inf, ymax = Inf,
+           alpha = 1/3, fill = 'darkgrey') +
+  geom_hline(yintercept = 0, color = 'darkgrey', size = 0.5) +
+  geom_ribbon(aes(ymax = zscore_blsub + zscore_blsub_sem,
+                  ymin = zscore_blsub - zscore_blsub_sem,
+                  fill = region),
+              color = NA, alpha = 1/3) +
+  geom_line() +
+  facet_grid(. ~ facet_regions) +
+  theme_ag01() +
+  scale_color_manual(values = color_values_regions) +
+  scale_fill_manual(values  = color_values_regions)
+
+plt <- plt %>%
+  add_scale_bar(origin = c(-3, -2), x_len = 1, y_len = 1)
+
+plt +
+  force_panelsizes(cols = unit(6, 'cm'), rows = unit(9, 'cm'))
+
+save_pdf(dir_output_b, str_c(fn_stem_b, '.pdf'), 12, 8)
+plt_data_b %>% write_csv(str_c(dir_output_b, fn_stem_b, '_data.csv'))
+```
+
+---
+
+## sfig10c: PETH by mA level (top) + summary bar mA × region and stats (bottom)
+```{r eval=FALSE}
+dir_output_c <- str_c(dir_output, 'c/')
+dir.create(dir_output_c, recursive = TRUE, showWarnings = FALSE)
+```
+
+### sfig10c top: PETH by mA level, faceted by region
+```{r eval=FALSE}
+fn_stem_c_top <- 'ets_peth'
+
+plt_data_c_top <- streams_peth_group %>%
+  mutate(mA = as.character(mA)) %>%
+  filter(time_rel > -1, time_rel < 15)
+```
+
+```{r eval=FALSE}
+plt <- plt_data_c_top %>%
+  ggplot(aes(time_rel, zscore_blsub, color = mA, fill = mA, group = mA)) +
+  annotate('rect', xmin = 0, xmax = 1, ymin = -Inf, ymax = Inf,
+           alpha = 1/3, fill = 'darkgrey') +
+  geom_hline(yintercept = 0, color = 'darkgrey', size = 0.5) +
+  geom_ribbon(aes(ymax = zscore_blsub + zscore_blsub_sem,
+                  ymin = zscore_blsub - zscore_blsub_sem),
+              color = NA, alpha = 1/3) +
+  geom_line() +
+  facet_grid(. ~ region) +
+  theme_ag01() +
+  scale_color_viridis_d(end = 0.8, option = 'magma') +
+  scale_fill_viridis_d(end  = 0.8, option = 'magma')
+
+plt <- plt %>%
+  add_scale_bar(origin = c(-3, -2), x_len = 1, y_len = 1)
+
+plt +
+  force_panelsizes(cols = unit(10, 'mm'), rows = unit(20, 'mm'))
+
+save_pdf(dir_output_c, str_c(fn_stem_c_top, '.pdf'), 12, 8)
+plt_data_c_top %>% write_csv(str_c(dir_output_c, fn_stem_c_top, '_data.csv'))
+```
+
+---
+
+### sfig10c bottom: summary bar mA × region + stats
+```{r eval=FALSE}
+fn_stem_c <- 'ets_summary'
+
+plt_data_c <- streams_peth %>%
+  filter(time_rel > 0, time_rel <= 3) %>%
+  group_by(subject, mA, region) %>%
+  summarise(zscore_blsub = mean(zscore_blsub), .groups = 'drop') %>%
+  mutate(mA     = mA %>% as.character()) %>%
+  mutate(region = region %>% factor(levels = key_regions$region_label %>% unique())) %>%
+  rename(zscore = zscore_blsub)
+```
+
+```{r eval=FALSE}
+regions <- plt_data_c %>% pull(region) %>% unique()
+
+for (loop_region in regions) {
+  stats_list <- plt_data_c %>%
+    filter(region == loop_region) %>%
+    aov_rm_one_within(NA, NA, 'subject', 'zscore', 'mA')
+
+  loop_stats_main <- stats_list[[2]] %>% mutate(region = loop_region)
+  loop_stats_hsd  <- stats_list[[3]] %>% mutate(region = loop_region)
+
+  if (loop_region == regions[1]) {
+    stats_main <- loop_stats_main
+    stats_hsd  <- loop_stats_hsd
+  } else {
+    stats_main <- loop_stats_main %>% bind_rows(stats_main, .)
+    stats_hsd  <- loop_stats_hsd  %>% bind_rows(stats_hsd,  .)
+  }
+}
+
+plt_annotations <- stats_main %>%
+  filter(effect == 'mA') %>%
+  select(region, sig_symbol) %>%
+  mutate(mA = 2, zscore = 5.5) %>%
+  mutate(region = region %>% factor(levels = key_regions$region_label %>% unique()))
+
+plt_data_c %>%
+  ggplot(aes(mA, zscore)) +
+  geom_hline(yintercept = 0, color = 'darkgrey', linewidth = 1/3) +
+  stat_summary(fun = 'mean', geom = 'line', aes(group = 1)) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = 1), width = 0) +
+  geom_text(data = plt_annotations, aes(label = sig_symbol)) +
+  facet_grid(. ~ region) +
+  theme_ag01(6) +
+  coord_cartesian(xlim = c(0.5, 3.5), ylim = c(-3, 6), expand = F) +
+  scale_y_continuous(breaks = seq(-3, 6, 3)) +
+  theme(strip.text.x = element_text(margin = margin(t = 5, b = 5))) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  force_panelsizes(cols = unit(10, 'mm'), rows = unit(20, 'mm'))
+
+save_pdf(dir_output_c, str_c(fn_stem_c, '.pdf'), 12, 8)
+plt_data_c    %>% write_csv(str_c(dir_output_c, fn_stem_c, '_data.csv'))
+stats_main    %>% write_csv(str_c(dir_output_c, fn_stem_c, '_aov.csv'))
+stats_hsd     %>% write_csv(str_c(dir_output_c, fn_stem_c, '_aov_hsd.csv'))
+```
+
+---
+
+## sfig10d: fiber placement maps + correlations
+```{r eval=FALSE}
+dir_output_d <- str_c(dir_output, 'd/')
+dir.create(dir_output_d, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_d <- 'ets'
+
+plt_data_d <- streams_peth %>%
+  filter(mA == 0.5) %>%
+  filter(time_rel > 0, time_rel <= 3) %>%
+  group_by(subject, mA, region) %>%
+  summarise(zscore_blsub = mean(zscore_blsub), .groups = 'drop') %>%
+  mutate(mA     = mA %>% as.character()) %>%
+  mutate(region = region %>% factor(levels = key_regions$region_label %>% unique())) %>%
+  rename(zscore = zscore_blsub) %>%
+  filter(!region %>% str_detect('LHA')) %>%
+  join_placements()
+
+color_limits_d <- c(-3, 3)
+```
+
+```{r eval=FALSE}
+plt_str(
+  df            = plt_data_d,
+  var_color     = !!sym('zscore'),
+  var_color_name = 'zs',
+  vars_facet    = c('.', '.'),
+  plt_plane     = 'sagittal',
+  plt_dim_base  = 3,
+  color_limits  = color_limits_d
+)
+save_pdf(str_c(dir_output_d), str_c(fn_stem_d, '_sagittal.pdf'), 6, 6)
+
+plt_str(
+  df            = plt_data_d,
+  var_color     = !!sym('zscore'),
+  var_color_name = 'zs',
+  vars_facet    = c('.', '.'),
+  plt_plane     = 'horizontal',
+  plt_dim_base  = 3,
+  color_limits  = color_limits_d
+)
+save_pdf(str_c(dir_output_d), str_c(fn_stem_d, '_horizontal.pdf'), 6, 6)
+
+plt_str(
+  df            = plt_data_d,
+  var_color     = !!sym('zscore'),
+  var_color_name = 'zs',
+  vars_facet    = c('.', '.'),
+  plt_plane     = 'coronal',
+  plt_dim_base  = 3,
+  color_limits  = color_limits_d
+)
+save_pdf(str_c(dir_output_d), str_c(fn_stem_d, '_coronal.pdf'), 6, 6)
+
+tryCatch(
+  plt_str_3d(
+    df           = plt_data_d,
+    var_color    = 'zscore',
+    color_limits = color_limits_d,
+    dir_output   = dir_output_d,
+    fn_stem      = fn_stem_d,
+    toggle_save  = 1
+  ),
+  error = function(e) message('plt_str_3d skipped (kaleido): ', conditionMessage(e))
+)
+```
+
+---
+
+## sfig10e: ETS vs consumption correlation
+```{r eval=FALSE}
+dir_output_e <- str_c(dir_output, 'e/')
+dir.create(dir_output_e, recursive = TRUE, showWarnings = FALSE)
+
+# ETS sustained response (0.5 mA, 0–3 s)
+plt_data_ets <- streams_peth %>%
+  filter(mA == 0.5) %>%
+  filter(time_rel > 0, time_rel <= 3) %>%
+  group_by(subject, mA, region) %>%
+  summarise(zscore_blsub = mean(zscore_blsub), .groups = 'drop') %>%
+  mutate(mA = mA %>% as.character()) %>%
+  rename(zscore_ets = zscore_blsub)
+
+# Consumption sustained response (from preprocessed file)
+str_consumption <- read.csv(str_c(dir_output_pre, 'str_consumption_sustained.csv'))
+```
+
+```{r eval=FALSE}
+# sfig10e left — ETS vs NaCl 1.5 M consumption
+fn_stem_e_left <- 'ets_corr_consumption_nacl150'
+
+plt_data_nacl150 <- plt_data_ets %>%
+  left_join(
+    str_consumption %>% filter(solution == 'nacl150'),
+    by = c('subject', 'region')
+  ) %>%
+  filter(!region %>% str_detect('LHA')) %>%
+  mutate(region = region %>% factor(levels = key_regions$region_label %>% unique()))
+
+plt_data_nacl150 %>%
+  ggplot(aes(zscore_blsub_mean, zscore_ets, group = 1)) +
+  geom_hline(yintercept = 0, color = 'darkgrey', linewidth = 1/2) +
+  geom_vline(xintercept = 0, color = 'darkgrey', linewidth = 1/2) +
+  geom_smooth(method = 'lm', size = 0.3, alpha = 1/5, color = 'black', formula = y ~ x) +
+  stat_cor(method = 'pearson', size = 2, label.y = 7, label.x = 0, hjust = 0.5) +
+  geom_point(shape = 21, stroke = 1/3, color = 'white', size = 2, alpha = 1,
+             aes(fill = region)) +
+  scale_fill_manual(values = color_values_regions[4:length(color_values_regions)]) +
+  theme_ag01(6) +
+  coord_cartesian(ylim = c(-6, 6), xlim = c(-3, 3), expand = F, clip = 'off') +
+  force_panelsizes(rows = unit(3, 'cm'), cols = unit(3, 'cm')) +
+  ylab('Electric tail shock response (zs)') +
+  xlab('1.5 M NaCl response (zs)')
+
+save_pdf(dir_output_e, str_c(fn_stem_e_left, '.pdf'), 4, 4)
+plt_data_nacl150 %>% write_csv(str_c(dir_output_e, fn_stem_e_left, '_data.csv'))
+```
+
+```{r eval=FALSE}
+# sfig10e right — ETS vs water (0.0 M NaCl) consumption
+fn_stem_e_right <- 'ets_corr_consumption_nacl000'
+
+plt_data_nacl000 <- plt_data_ets %>%
+  left_join(
+    str_consumption %>% filter(solution == 'nacl000'),
+    by = c('subject', 'region')
+  ) %>%
+  filter(!region %>% str_detect('LHA')) %>%
+  mutate(region = region %>% factor(levels = key_regions$region_label %>% unique()))
+
+plt_data_nacl000 %>%
+  ggplot(aes(zscore_blsub_mean, zscore_ets, group = 1)) +
+  geom_hline(yintercept = 0, color = 'darkgrey', linewidth = 1/2) +
+  geom_vline(xintercept = 0, color = 'darkgrey', linewidth = 1/2) +
+  geom_smooth(method = 'lm', size = 0.3, alpha = 1/5, color = 'black', formula = y ~ x) +
+  stat_cor(method = 'pearson', size = 2, label.y = 7, label.x = 1.5, hjust = 0.5) +
+  geom_point(shape = 21, stroke = 1/3, color = 'white', size = 2, alpha = 1,
+             aes(fill = region)) +
+  scale_fill_manual(values = color_values_regions[4:length(color_values_regions)]) +
+  theme_ag01(6) +
+  coord_cartesian(ylim = c(-6, 6), xlim = c(-3, 6), expand = F, clip = 'off') +
+  force_panelsizes(rows = unit(3, 'cm'), cols = unit(3, 'cm')) +
+  ylab('Electric tail shock response (zs)') +
+  xlab('0.0 M NaCl response (zs)')
+
+save_pdf(dir_output_e, str_c(fn_stem_e_right, '.pdf'), 4, 4)
+plt_data_nacl000 %>% write_csv(str_c(dir_output_e, fn_stem_e_right, '_data.csv'))
+```
+
+```{r eval=FALSE}
+# combined correlation stats across both solutions
+bind_rows(
+  plt_data_nacl000 %>% rename(zscore_consumption = zscore_blsub_mean),
+  plt_data_nacl150 %>% rename(zscore_consumption = zscore_blsub_mean)
+) %>%
+  select(solution, region, subject, zscore_ets, zscore_consumption) %>%
+  tidy_cor('zscore_ets', 'zscore_consumption', 'solution') %>%
+  write_csv(str_c(dir_output_e, 'ets_corr_consumption_stats.csv'))
+```
+
+---
+
+## sfig10f: ETS vs LHA stimulation correlation
+```{r eval=FALSE}
+dir_output_f <- str_c(dir_output, 'f/')
+dir.create(dir_output_f, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem_f <- 'ets_corr_lhastim'
+
+# LHA stimulation group summary — per-subject initial bar data (20 Hz, VGAT and VGlut2)
+df_lha_stimulation <- read.csv(
+  './analysis_and_plots/fig02_sfig04/c/opto_stim_20hz_region_bar_sustained_data.csv') %>%
+  filter(group_combined %in% c('vgat_stim', 'vglut2_stim')) %>%
+  group_by(group_combined, region) %>%
+  summarise(zscore_lhastim = mean(zscore), .groups = 'drop')
+```
+
+
+```{r eval=FALSE}
+plt_data_f <- streams_peth %>%
+  filter(mA == 0.5) %>%
+  filter(time_rel > 0, time_rel <= 3) %>%
+  group_by(subject, mA, region) %>%
+  summarise(zscore_blsub = mean(zscore_blsub), .groups = 'drop') %>%
+  mutate(mA = mA %>% as.character()) %>%
+  rename(zscore_ets = zscore_blsub) %>%
+  group_by(region) %>%
+  summarise(zscore_ets = mean(zscore_ets)) %>%
+  left_join(df_lha_stimulation, by = 'region') %>%
+  filter(!is.na(group_combined)) %>%
+  mutate(region = region %>% factor(levels = key_regions$region_label %>% unique()))
+
+plt_data_f %>%
+  ggplot(aes(zscore_lhastim, zscore_ets)) +
+  geom_hline(yintercept = 0, color = 'darkgrey', linewidth = 1/2) +
+  geom_vline(xintercept = 0, color = 'darkgrey', linewidth = 1/2) +
+  geom_smooth(method = 'lm', size = 0.3, alpha = 1/5, color = 'black', formula = y ~ x) +
+  stat_cor(method = 'pearson', size = 2, label.y = 6, label.x = 7.5, hjust = 0.5) +
+  geom_point(shape = 21, stroke = 1/3, color = 'white', size = 2, alpha = 1,
+             aes(fill = region)) +
+  scale_fill_manual(values = color_values_regions[4:length(color_values_regions)]) +
+  facet_grid(. ~ group_combined) +
+  theme_ag01(6) +
+  coord_cartesian(ylim = c(-6, 6), xlim = c(-5, 20), expand = F, clip = 'off') +
+  force_panelsizes(rows = unit(3, 'cm'), cols = unit(3, 'cm')) +
+  theme(strip.text.x   = element_text(margin = margin(b = 10))) +
+  theme(panel.spacing.x = unit(0.5, 'cm')) +
+  ylab('Electric tail shock response (zs)') +
+  xlab('LHA stimulation response (zs)')
+
+save_pdf(dir_output_f, str_c(fn_stem_f, '.pdf'), 4, 4)
+plt_data_f %>% write_csv(str_c(dir_output_f, fn_stem_f, '_data.csv'))
+
+plt_data_f %>%
+  tidy_cor('zscore_ets', 'zscore_lhastim', 'group_combined') %>%
+  write_csv(str_c(dir_output_f, fn_stem_f, '_stats.csv'))
+```

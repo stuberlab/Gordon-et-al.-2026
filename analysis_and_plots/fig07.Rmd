@@ -1,0 +1,729 @@
+---
+title: "fig07"
+author: "adam gordon-fennell"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = normalizePath('../'))
+```
+
+# setup
+## libraries
+```{r eval=FALSE}
+library(tidyverse)
+library(afex)
+library(emmeans)
+library(janitor)
+library(readxl)
+library(ggh4x)
+library(arrow)
+library(zoo)
+library(lubridate)
+library(patchwork)
+library(ggbeeswarm)
+library(ggpubr)
+library(pals)
+library(boot)
+library(corrplot)
+library(Hmisc)
+library(plotly)
+
+arrow::set_cpu_count(4)
+
+source('./functions/params.R')
+source('./functions/theme.R')
+source('./functions/general.R')
+source('./functions/r_general.R')
+source('./functions/r_plots.R')
+source('./functions/stats.R')
+source('./functions/pca.R')
+source('./functions/analysis_peth.R')
+source('./functions/plotting_placements.R')
+```
+
+## directories
+```{r eval=FALSE}
+dir_sessions_combined_subject <- './data/sessions_combined_subject/'
+dir_output                    <- './analysis_and_plots/fig07/'
+
+dir.create(dir_output, recursive = TRUE, showWarnings = FALSE)
+```
+
+## logs / keys
+```{r eval=FALSE}
+log_placements <- read.csv('./logs_and_keys/log_fiber_placements.csv', na.strings = c('', 'NA'))
+```
+
+## local functions
+```{r eval=FALSE}
+# plt_line_pairwise: NOT in repo functions (repo has plt_bar_pairwise which uses aov_rm_one_between)
+# this version uses aov_rm_one_within for within-subject stats per region
+plt_line_pairwise <- function(df, dir_output, fn_stem, var_id = 'subject', var_dv, var_within, ylims, heat_range = NA) {
+
+  n_within <- df %>%
+    pull(!!as.name(var_within)) %>%
+    unique() %>%
+    length()
+
+  pltline <- df %>%
+    ggplot(aes(region, !!as.name(var_dv))) +
+    geom_line(aes(group = !!as.name(var_id)), alpha = 1/4) +
+    stat_summary(fun = 'mean', geom = 'line', aes(group = 1)) +
+    stat_summary(fun.data = 'mean_se', geom = 'errorbar', aes(group = 1), width = 0) +
+    theme_ag01(6) +
+    theme(axis.title.x = element_blank(),
+          axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+    coord_cartesian(xlim = c(0.5, n_within + 0.5), ylim = ylims, expand = F)
+
+  stats_results <- df %>%
+    aov_rm_one_within(dir_output, fn_stem, var_id, var_dv, var_within)
+
+  df_pairs <- stats_results[[3]] %>%
+    format_regions('contrast1_within', key_regions) %>%
+    format_regions('contrast2_within', key_regions)
+
+  plt_comparisions <- plt_hsd_matrix_2contrasts(df_pairs, heat_range)
+
+  return(list(stats_results, pltline, plt_comparisions))
+}
+```
+
+---
+
+# STR correlation [fig7 B-F]
+## preprocessing
+```{r eval=FALSE}
+toggle_process <- 0   # 1 = load from sessions_combined_subject and save  |  0 = CSVs already exist
+
+dir_output_pre <- str_c(dir_output, 'pre/')
+dir.create(dir_output_pre, recursive = TRUE, showWarnings = FALSE)
+```
+
+```{r eval=FALSE}
+if (toggle_process == 1) {
+
+  # ── 1. STR baseline correlation ───────────────────────────────────────────────
+  fns_streams_bl_corr <- list.files(dir_sessions_combined_subject,
+                                    pattern = 'streams_baseline_corr.csv',
+                                    recursive = T, full.names = T)
+  fns_streams_bl_corr <- fns_streams_bl_corr[!fns_streams_bl_corr %>% str_detect('lhastr')]
+
+  bind_rows(lapply(fns_streams_bl_corr, read.csv)) %>%
+    filter(set_id %in% c('wrnacl', 'wrsuc', 'frsuc')) %>%
+    format_set_id(key_set_id) %>%
+    mutate(
+      var_x = var_x %>% factor(levels = key_regions$region_label %>% unique()),
+      var_y = var_y %>% factor(levels = key_regions$region_label %>% unique())
+    ) %>%
+    write_csv(str_c(dir_output_pre, 'str_baseline_corr.csv'))
+
+  # ── 2. STR peth corr timerel ──────────────────────────────────────────────────
+  fns_streams_peth_corr_timerel <- list.files(dir_sessions_combined_subject,
+                                              pattern = 'streams_peth_corr_timerel.csv',
+                                              recursive = T, full.names = T)
+  fns_streams_peth_corr_timerel <- fns_streams_peth_corr_timerel[!fns_streams_peth_corr_timerel %>% str_detect('lhastr')]
+
+  bind_rows(lapply(fns_streams_peth_corr_timerel, read.csv)) %>%
+    filter(set_id %in% c('wrnacl', 'wrsuc', 'frsuc')) %>%
+    format_set_id(key_set_id) %>%
+    mutate(
+      var_x = var_x %>% factor(levels = key_regions$region_label %>% unique()),
+      var_y = var_y %>% factor(levels = key_regions$region_label %>% unique())
+    ) %>%
+    write_csv(str_c(dir_output_pre, 'str_peth_corr_timerel.csv'))
+
+  # ── 3. STR peth corr windows ─────────────────────────────────────────────────
+  fns_streams_peth_corr_windows <- list.files(dir_sessions_combined_subject,
+                                              pattern = 'streams_peth_corr_windows.csv',
+                                              recursive = T, full.names = T)
+  fns_streams_peth_corr_windows <- fns_streams_peth_corr_windows[!fns_streams_peth_corr_windows %>% str_detect('lhastr')]
+
+  bind_rows(lapply(fns_streams_peth_corr_windows, read.csv)) %>%
+    filter(set_id %in% c('wrnacl', 'wrsuc', 'frsuc')) %>%
+    format_set_id(key_set_id) %>%
+    mutate(
+      var_x = var_x %>% factor(levels = key_regions$region_label %>% unique()),
+      var_y = var_y %>% factor(levels = key_regions$region_label %>% unique())
+    ) %>%
+    write_csv(str_c(dir_output_pre, 'str_peth_corr_windows.csv'))
+
+  # ── 4. placement distances ────────────────────────────────────────────────────
+  loop_log_placements <- log_placements %>%
+    select(subject, region = target, starts_with('hit'))
+
+  df_distances <- loop_log_placements %>%
+    group_by(subject) %>%
+    group_modify(~ calculate_pairwise_distances(.x)) %>%
+    mutate(region1 = region1 %>% factor(levels = levels_region)) %>%
+    mutate(region2 = region2 %>% factor(levels = levels_region))
+
+  df_distances <- df_distances %>%
+    rename(region2_dummy = region1) %>%
+    rename(region1 = region2) %>%
+    rename(region2 = region2_dummy) %>%
+    bind_rows(df_distances) %>%
+    unique() %>%
+    mutate(region1 = region1 %>% as.character(),
+           region2 = region2 %>% as.character())
+
+  df_distances %>%
+    write_csv(str_c(dir_output_pre, 'placement_distances.csv'))
+
+} else {
+  message('toggle_process = 0: preprocessing CSVs will be read by each section')
+}
+```
+
+---
+
+## fig7b: mean r peth trace
+```{r eval=FALSE}
+dir_output_b <- str_c(dir_output, 'b/')
+dir.create(dir_output_b, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem <- 'cor_peth_setid'
+
+plt_data <- read.csv(str_c(dir_output_pre, 'str_peth_corr_timerel.csv')) %>%
+  mutate(
+    set_id = set_id %>% factor(levels = key_set_id$set_id_label %>% unique()),
+    var_x  = var_x  %>% factor(levels = key_regions$region_label %>% unique()),
+    var_y  = var_y  %>% factor(levels = key_regions$region_label %>% unique())
+  ) %>%
+  filter(var_x != var_y) %>%
+  group_by(subject, set_id, time_rel) %>%
+  summarise(r = mean(r))
+
+plt_data %>%
+  ggplot(aes(time_rel, r, color = set_id, fill = set_id, group = set_id)) +
+  geom_hline(yintercept = c(0.2, 0.4, 0.6), color = 'darkgrey', size = 1/3) +
+  annotate("rect", xmin = 0, xmax = 3, ymin = -Inf, ymax = Inf, alpha = 1/3, fill = "darkgrey") +
+  stat_summary(fun.data = 'mean_se', geom = 'ribbon', color = NA, alpha = 1/3) +
+  stat_summary(fun = 'mean', geom = 'line') +
+  scale_color_manual(values = color_values_experiment_set) +
+  scale_fill_manual(values = color_values_experiment_set) +
+  theme_ag01(6) +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(2, 'cm')) +
+  coord_cartesian(xlim = c(-3, 9), ylim = c(0, 0.6), expand = F) +
+  scale_y_continuous(breaks = seq(0, 0.6, 0.2)) +
+  ylab('Mean R') +
+  xlab('Time (s)')
+
+save_pdf(dir_output_b, str_c(fn_stem, '_trace.pdf'), 6, 4)
+plt_data %>% write_csv(str_c(dir_output_b, fn_stem, '_trace_data.csv'))
+```
+
+---
+
+## fig7c: consumption correlation heat map (WR:NaCl, Sustained)
+```{r eval=FALSE}
+dir_output_c <- str_c(dir_output, 'c/')
+dir.create(dir_output_c, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem <- 'cor_peth_setid'
+
+plt_data_windows <- read.csv(str_c(dir_output_pre, 'str_peth_corr_windows.csv')) %>%
+  mutate(
+    set_id       = set_id       %>% factor(levels = c('FR:Suc', 'WR:Suc', 'WR:NaCl')),
+    time_rel_bin = time_rel_bin %>% factor(levels = c('Pre', 'Sustained', 'Post')),
+    var_x        = var_x        %>% factor(levels = key_regions$region_label %>% unique()),
+    var_y        = var_y        %>% factor(levels = key_regions$region_label %>% unique())
+  )
+
+plt_data_summary <- plt_data_windows %>%
+  filter(set_id == 'WR:NaCl', time_rel_bin == 'Sustained') %>%
+  group_by(set_id, time_rel_bin, var_x, var_y) %>%
+  summarise(r = mean(r), .groups = 'drop')
+
+plt_corrmatrix(plt_data_summary) +
+  facet_grid(time_rel_bin ~ set_id) +
+  ggtitle('Consumption correlation /n') +
+  coord_cartesian(xlim = c(0.5, 6.5), ylim = c(0.5, 6.5), expand = F) +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(2, 'cm'))
+
+save_pdf(dir_output_c, str_c(fn_stem, '_heat.pdf'), 6, 4)
+plt_data_summary %>% write_csv(str_c(dir_output_c, fn_stem, '_heat_data.csv'))
+```
+
+---
+
+## fig7d: set_id vs mean R (sustained)
+```{r eval=FALSE}
+dir_output_d <- str_c(dir_output, 'd/')
+dir.create(dir_output_d, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem <- 'cor_peth_setid'
+
+plt_data_subject <- read.csv(str_c(dir_output_pre, 'str_peth_corr_windows.csv')) %>%
+  mutate(
+    set_id       = set_id       %>% factor(levels = c('FR:Suc', 'WR:Suc', 'WR:NaCl')),
+    time_rel_bin = time_rel_bin %>% factor(levels = c('Pre', 'Sustained', 'Post')),
+    var_x        = var_x        %>% factor(levels = key_regions$region_label %>% unique()),
+    var_y        = var_y        %>% factor(levels = key_regions$region_label %>% unique())
+  ) %>%
+  filter(var_x != var_y) %>%
+  group_by(subject, set_id, time_rel_bin, var_x, var_y) %>%
+  summarise(r = mean(r), .groups = 'drop') %>%
+  group_by(subject, set_id, time_rel_bin) %>%
+  summarise(r = mean(r), .groups = 'drop')
+
+plt_data_temp <- plt_data_subject %>%
+  filter(time_rel_bin == 'Sustained')
+
+plt_data_temp %>%
+  ggplot(aes(set_id, r, group = 1)) +
+  geom_line(aes(group = subject), alpha = 1/3, size = 1/3) +
+  stat_summary(fun = 'mean', geom = 'line') +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0) +
+  theme_ag01(6) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  coord_cartesian(xlim = c(0.5, 3.5), ylim = c(0, 1), expand = F) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  xlab('') +
+  ylab('Mean R') +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(1, 'cm'))
+
+save_pdf(dir_output_d, str_c(fn_stem, '_summary_sustained.pdf'), 6, 4)
+plt_data_temp %>% write_csv(str_c(dir_output_d, fn_stem, '_summary_sustained_data.csv'))
+```
+
+```{r eval=FALSE}
+plt_data_temp %>%
+  aov_rm_one_within(dir_output_d, str_c(fn_stem, '_summary_sustained'), 'subject', 'r', 'set_id')
+```
+
+---
+
+## fig7e: region vs pairwise mean R (sustained)
+```{r eval=FALSE}
+dir_output_e <- str_c(dir_output, 'e/')
+dir.create(dir_output_e, recursive = TRUE, showWarnings = FALSE)
+
+fn_stem <- 'cor_peth_sustained_pairwisecor'
+
+# build pairwise correlation data from peth windows (sustained)
+plt_data_windows <- read.csv(str_c(dir_output_pre, 'str_peth_corr_windows.csv')) %>%
+  mutate(
+    set_id       = set_id       %>% factor(levels = c('FR:Suc', 'WR:Suc', 'WR:NaCl')),
+    time_rel_bin = time_rel_bin %>% factor(levels = c('Pre', 'Sustained', 'Post')),
+    var_x        = var_x        %>% factor(levels = key_regions$region_label %>% unique()),
+    var_y        = var_y        %>% factor(levels = key_regions$region_label %>% unique())
+  ) %>%
+  filter(var_x != var_y, time_rel_bin == 'Sustained', set_id =='WR:NaCl')
+
+regions <- unique(plt_data_windows$var_x)
+
+for (region in regions) {
+  loop_df <- plt_data_windows %>%
+    filter(var_x == region | var_y == region) %>%
+    mutate(pairwise_region01 = region) %>%
+    mutate(pairwise_region02 = case_when(
+      var_x == region ~ var_y,
+      var_y == region ~ var_x
+    )) %>%
+    select(-var_x, -var_y)
+
+  if (region == regions[1]) {
+    cor_pairwise <- loop_df
+  } else {
+    cor_pairwise <- bind_rows(cor_pairwise, loop_df)
+  }
+}
+
+cor_pairwise <- cor_pairwise %>%
+  group_by(subject, pairwise_region01, pairwise_region02) %>%
+  summarise(r = mean(r), .groups = 'drop') %>%
+  mutate(pairwise_region01 = pairwise_region01 %>% factor(levels = key_regions$region_label %>% unique()))
+
+plt_data_summary <- cor_pairwise %>%
+  group_by(subject, pairwise_region01) %>%
+  summarise(r = mean(r), .groups = 'drop')
+
+key_regions_crosswise <- key_regions %>%
+  filter(region != 'nacsh_lat')
+
+plt_pairwise <- plt_line_pairwise(
+  df         = plt_data_summary %>% left_join(key_regions_crosswise %>% rename(pairwise_region01 = region_label)),
+  dir_output = dir_output_e,
+  fn_stem    = fn_stem,
+  var_dv     = 'r',
+  var_within = 'region',
+  ylims      = c(-1, 1)
+)
+
+plt_line <- plt_data_summary %>%
+  ggplot(aes(pairwise_region01, r, group = 1)) +
+  geom_hline(yintercept = 0, color = 'darkgrey', size = 1/3) +
+  geom_line(aes(group = subject), size = 1/2, alpha = 1/3) +
+  stat_summary(fun = 'mean', geom = 'line') +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0) +
+  theme_ag01(6) +
+  force_panelsizes(rows = unit(3, 'cm'), cols = unit(3, 'cm')) +
+  coord_cartesian(xlim = c(0, 7), ylim = c(-0.5, 1), expand = F, clip = 'off') +
+  scale_color_manual(values = color_values_regions_da) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  xlab('Pairwise Region') +
+  ylab('Pairwise R')
+
+plt_line + plt_pairwise[[3]] +
+  plot_layout(ncol = 2, widths = unit(2, 'cm'), heights = unit(2, 'cm'))
+
+cor_pairwise %>% write_csv(str_c(dir_output_e, fn_stem, '_data.csv'))
+save_pdf(dir_output_e, str_c(fn_stem, '.pdf'), 6, 4)
+```
+
+
+
+
+---
+
+## fig7f: pairwise ECDF + fiber distance vs pairwise R (sustained)
+```{r eval=FALSE}
+dir_output_f <- str_c(dir_output, 'f/')
+dir.create(dir_output_f, recursive = TRUE, showWarnings = FALSE)
+
+# build pairwise correlation data from peth windows (sustained)
+plt_data_windows <- read.csv(str_c(dir_output_pre, 'str_peth_corr_windows.csv')) %>%
+  mutate(
+    set_id       = set_id       %>% factor(levels = c('FR:Suc', 'WR:Suc', 'WR:NaCl')),
+    time_rel_bin = time_rel_bin %>% factor(levels = c('Pre', 'Sustained', 'Post')),
+    var_x        = var_x        %>% factor(levels = key_regions$region_label %>% unique()),
+    var_y        = var_y        %>% factor(levels = key_regions$region_label %>% unique())
+  ) %>%
+  filter(var_x != var_y, time_rel_bin == 'Sustained', set_id == 'WR:NaCl')
+
+regions <- unique(plt_data_windows$var_x)
+
+for (region in regions) {
+  loop_df <- plt_data_windows %>%
+    filter(var_x == region | var_y == region) %>%
+    mutate(pairwise_region01 = region) %>%
+    mutate(pairwise_region02 = case_when(
+      var_x == region ~ var_y,
+      var_y == region ~ var_x
+    )) %>%
+    select(-var_x, -var_y)
+
+  if (region == regions[1]) {
+    cor_pairwise <- loop_df
+  } else {
+    cor_pairwise <- bind_rows(cor_pairwise, loop_df)
+  }
+}
+
+cor_pairwise <- cor_pairwise %>%
+  group_by(subject, pairwise_region01, pairwise_region02) %>%
+  summarise(r = mean(r), .groups = 'drop') %>%
+  mutate(pairwise_region01 = pairwise_region01 %>% factor(levels = key_regions$region_label %>% unique()))
+```
+
+```{r eval=FALSE}
+# pairwise ECDF
+fn_stem <- 'cor_peth_pairwise_ecdf'
+
+cor_pairwise %>%
+  ggplot(aes(r, color = pairwise_region01)) +
+  geom_vline(xintercept = 0, color = 'darkgrey', size = 1/3) +
+  stat_ecdf() +
+  theme_ag01(6) +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(0.5992, 'cm')) +
+  coord_cartesian(xlim = c(-1, 1), ylim = c(0, 1), expand = F, clip = 'off') +
+  scale_color_manual(values = color_values_regions_da) +
+  theme(panel.spacing = unit(1.5, "lines")) +
+  theme(strip.text = element_text(margin = margin(b = 5))) +
+  xlab('Pairwise R') +
+  ylab('Proportion')
+
+cor_pairwise %>% write_csv(str_c(dir_output_f, fn_stem, '_data.csv'))
+save_pdf(dir_output_f, str_c(fn_stem, '.pdf'), 6, 4)
+```
+
+```{r eval=FALSE}
+# fiber pair distance vs pairwise R
+fn_stem <- 'cor_peth_pairwise_cor_vs_euclidian'
+
+df_distances <- read.csv(str_c(dir_output_pre, 'placement_distances.csv'))
+
+plt_data_summary <- plt_data_windows %>%
+  filter(var_x != var_y, time_rel_bin == 'Sustained', set_id == 'WR:NaCl') %>%
+  group_by(subject, var_x, var_y) %>%
+  summarise(r = mean(r), .groups = 'drop') %>%
+  mutate(var_x = var_x %>% as.character(),
+         var_y = var_y %>% as.character()) %>%
+  left_join(df_distances %>% rename(var_x = region1, var_y = region2),
+            by = join_by(var_x, var_y, subject)) %>%
+  filter(r != 1) %>%
+  filter_matrix_unique_combinations()
+
+plt_data_summary %>%
+  ggplot(aes(distance, r)) +
+  geom_hline(yintercept = 0, color = 'darkgrey', size = 0.5) +
+  geom_point(shape = 21, size = .5, color = 'white', fill = 'black', stroke = 1/4) +
+  geom_smooth(method = 'lm', size = 0.3, alpha = 1/5, color = 'red', fill = 'red') +
+  theme_ag01(6) +
+  coord_cartesian(ylim = c(-1, 1), xlim = c(0, 5), expand = F, clip = 'off') +
+  stat_cor(method = 'pearson', size = 2, label.y = 1) +
+  xlab('Euclidean distance (mm)') +
+  ylab('R') +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(1.0526, 'cm'))
+
+save_pdf(dir_output_f, str_c(fn_stem, '.pdf'), 6, 6)
+plt_data_summary %>% write_csv(str_c(dir_output_f, fn_stem, '_data.csv'))
+
+tidy_cor(plt_data_summary, 'distance', 'r') %>%
+  write_csv(str_c(dir_output_f, fn_stem, '_stats_cor.csv'))
+```
+
+---
+
+# LHA/STR correlation [fig7 G-I]
+## preprocessing
+```{r eval=FALSE}
+toggle_process <- 0
+
+filter_corrdata <- function(df) {
+  df %>%
+    filter(var_x %>% str_detect('LHA')) %>%
+    filter(!var_y %>% str_detect('LHA')) %>%
+    filter(set_id == 'WR:NaCl') %>%
+    mutate(set_id = set_id %>% factor(levels = c('FR:Suc', 'WR:Suc', 'WR:NaCl'))) %>%
+    mutate(var_x = var_x %>% factor(levels = c('LHA:Glut', 'LHA:GABA', 'LHA:Ratio')))
+}
+```
+
+```{r eval=FALSE}
+if (toggle_process == 1) {
+
+  # ── 5. LHA/STR baseline correlation ──────────────────────────────────────────
+  fns_streams_bl_corr <- list.files(dir_sessions_combined_subject,
+                                    pattern = 'streams_baseline_corr.csv',
+                                    recursive = T, full.names = T)
+  fns_streams_bl_corr <- fns_streams_bl_corr[fns_streams_bl_corr %>% str_detect('lhastr')]
+
+  bind_rows(lapply(fns_streams_bl_corr, read.csv)) %>%
+    filter(set_id %in% c('wrnacl', 'wrsuc', 'frsuc')) %>%
+    format_set_id(key_set_id) %>%
+    mutate(
+      var_x = var_x %>% factor(levels = key_regions$region_label %>% unique()),
+      var_y = var_y %>% factor(levels = key_regions$region_label %>% unique())
+    ) %>%
+    filter_corrdata() %>%
+    write_csv(str_c(dir_output_pre, 'lhastr_baseline_corr.csv'))
+
+  # ── 6. LHA/STR peth corr timerel ─────────────────────────────────────────────
+  fns_streams_peth_corr_timerel <- list.files(dir_sessions_combined_subject,
+                                              pattern = 'streams_peth_corr_timerel.csv',
+                                              recursive = T, full.names = T)
+  fns_streams_peth_corr_timerel <- fns_streams_peth_corr_timerel[fns_streams_peth_corr_timerel %>% str_detect('lhastr')]
+
+  bind_rows(lapply(fns_streams_peth_corr_timerel, read.csv)) %>%
+    filter(set_id %in% c('wrnacl', 'wrsuc', 'frsuc')) %>%
+    format_set_id(key_set_id) %>%
+    mutate(
+      var_x = var_x %>% factor(levels = key_regions$region_label %>% unique()),
+      var_y = var_y %>% factor(levels = key_regions$region_label %>% unique())
+    ) %>%
+    filter_corrdata() %>%
+    write_csv(str_c(dir_output_pre, 'lhastr_peth_corr_timerel.csv'))
+
+  # ── 7. LHA/STR peth corr windows ─────────────────────────────────────────────
+  fns_streams_peth_corr_windows <- list.files(dir_sessions_combined_subject,
+                                              pattern = 'streams_peth_corr_windows.csv',
+                                              recursive = T, full.names = T)
+  fns_streams_peth_corr_windows <- fns_streams_peth_corr_windows[fns_streams_peth_corr_windows %>% str_detect('lhastr')]
+
+  bind_rows(lapply(fns_streams_peth_corr_windows, read.csv)) %>%
+    filter(set_id %in% c('wrnacl', 'wrsuc', 'frsuc')) %>%
+    format_set_id(key_set_id) %>%
+    mutate(
+      var_x = var_x %>% factor(levels = key_regions$region_label %>% unique()),
+      var_y = var_y %>% factor(levels = key_regions$region_label %>% unique())
+    ) %>%
+    filter_corrdata() %>%
+    write_csv(str_c(dir_output_pre, 'lhastr_peth_corr_windows.csv'))
+
+} else {
+  message('toggle_process = 0: LHA/STR preprocessing CSVs will be read by each section')
+}
+```
+
+---
+
+## fig7h: lha/str baseline correlation (heat map + bar summary, WR:NaCl)
+```{r eval=FALSE}
+dir_output_h <- str_c(dir_output, 'h/')
+dir.create(dir_output_h, recursive = TRUE, showWarnings = FALSE)
+```
+
+### fig7h top: heat map
+```{r eval=FALSE}
+fn_stem <- 'cor_baseline_setid'
+
+streams_bl_corr <- read.csv(str_c(dir_output_pre, 'lhastr_baseline_corr.csv')) %>%
+  filter(var_x != 'LHA:Ratio') %>%
+  mutate(
+    set_id = set_id %>% factor(levels = c('FR:Suc', 'WR:Suc', 'WR:NaCl')),
+    var_x  = var_x  %>% factor(levels = c('LHA:Glut', 'LHA:GABA')),
+    var_y  = var_y  %>% factor(levels = key_regions$region_label %>% unique())
+  )
+
+plt_data_summary <- streams_bl_corr %>%
+  group_by(set_id, var_x, var_y) %>%
+  summarise(r = mean(r), .groups = 'drop')
+
+plt_data_summary %>%
+  ggplot(aes(var_y, var_x, fill = r)) +
+  geom_tile() +
+  theme_ag01(6) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x  = element_text(angle = 90, hjust = 1, vjust = 0.3)
+  ) +
+  facet_grid(. ~ set_id) +
+  ggtitle('Baseline correlation /n') +
+  coord_cartesian(xlim = c(0.5, 4.5), ylim = c(0.5, 2.5), expand = F) +
+  scale_fill_viridis_c(limits = c(-0.25, 0.25), oob = scales::squish, option = 'cividis') +
+  force_panelsizes(rows = unit(2 * 1/3, 'cm'), cols = unit(4 * 1/3, 'cm'))
+
+save_pdf(dir_output_h, str_c(fn_stem, '_heat.pdf'), 6, 4)
+plt_data_summary %>% write_csv(str_c(dir_output_h, fn_stem, '_heat_data.csv'))
+```
+
+### fig7h bottom: bar summary
+```{r eval=FALSE}
+fn_stem <- 'cor_baseline_wrnacl_lha_vs_r_facet_str_bar'
+
+streams_bl_corr <- read.csv(str_c(dir_output_pre, 'lhastr_baseline_corr.csv')) %>%
+  mutate(
+    set_id = set_id %>% factor(levels = c('FR:Suc', 'WR:Suc', 'WR:NaCl')),
+    var_x  = var_x  %>% factor(levels = c('LHA:Glut', 'LHA:GABA', 'LHA:Ratio')),
+    var_y  = var_y  %>% factor(levels = key_regions$region_label %>% unique())
+  )
+
+stats_data <- streams_bl_corr %>%
+  filter(var_x %in% c('LHA:GABA', 'LHA:Glut'))
+
+stats_results <- stats_data %>%
+  select(subject, var_x, var_y, r) %>%
+  spread(var_x, r) %>%
+  clean_names() %>%
+  tidy_ttest_unpaired(NA, NA, 'lha_glut', 'lha_gaba', 'var_y') %>%
+  quick_sig()
+
+stats_data %>%
+  ggplot(aes(var_x, r, group = 1, color = var_x, fill = var_x)) +
+  geom_hline(yintercept = 0, linewidth = 1/2) +
+  geom_jitter(aes(group = subject), alpha = 1/3, size = 1, width = 0.2) +
+  stat_summary(fun = 'mean', geom = 'bar', alpha = 1/3, color = NA, width = 0.6) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0) +
+  theme_ag01(6) +
+  scale_color_manual(values = color_values_regions[c(2, 1)]) +
+  scale_fill_manual(values  = color_values_regions[c(2, 1)]) +
+  facet_grid(. ~ var_y) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  coord_cartesian(xlim = c(0.5, 2.5), ylim = c(-0.6, 0.6), expand = F, clip = 'off') +
+  scale_y_continuous(breaks = seq(-0.6, 0.6, 0.3)) +
+  xlab('') +
+  ylab('Mean R') +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(0.5, 'cm'))
+
+save_pdf(dir_output_h, str_c(fn_stem, '_summary.pdf'), 6, 4)
+stats_results %>% write_csv(str_c(dir_output_h, fn_stem, '_summary_stats_ttest.csv'))
+stats_data    %>% write_csv(str_c(dir_output_h, fn_stem, '_summary_data.csv'))
+```
+
+---
+
+## fig7i: lha/str peth correlation (trace + bar summary, WR:NaCl)
+```{r eval=FALSE}
+dir_output_i <- str_c(dir_output, 'i/')
+dir.create(dir_output_i, recursive = TRUE, showWarnings = FALSE)
+```
+
+```{r eval=FALSE}
+# fig7i top: peth correlation trace
+fn_stem <- 'peth_cor_lha_region'
+
+streams_peth_corr_timerel <- read.csv(str_c(dir_output_pre, 'lhastr_peth_corr_timerel.csv')) %>%
+  mutate(
+    set_id = set_id %>% factor(levels = c('FR:Suc', 'WR:Suc', 'WR:NaCl')),
+    var_x  = var_x  %>% factor(levels = c('LHA:Glut', 'LHA:GABA', 'LHA:Ratio')),
+    var_y  = var_y  %>% factor(levels = key_regions$region_label %>% unique())
+  )
+
+plt_data <- streams_peth_corr_timerel %>%
+  group_by(var_x, subject, set_id, time_rel) %>%
+  summarise(r = mean(r), .groups = 'drop')
+
+streams_peth_corr_timerel %>%
+  filter(var_x %in% c('LHA:Glut', 'LHA:GABA')) %>%
+  ggplot(aes(time_rel, r, color = var_x, fill = var_x, group = var_x)) +
+  geom_hline(yintercept = c(-0.4, -0.2, 0.2, 0.4), color = 'darkgrey', size = 1/3) +
+  geom_hline(yintercept = c(0), color = 'darkgrey', size = 1/2) +
+  annotate("rect", xmin = 0, xmax = 3, ymin = -Inf, ymax = Inf, alpha = 1/3, fill = "darkgrey") +
+  stat_summary(fun.data = 'mean_se', geom = 'ribbon', color = NA, alpha = 1/3) +
+  stat_summary(fun = 'mean', geom = 'line') +
+  scale_color_manual(values = color_values_regions[c(2, 1)]) +
+  scale_fill_manual(values  = color_values_regions[c(2, 1)]) +
+  theme_ag01(6) +
+  facet_grid(set_id ~ var_y) +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(2, 'cm')) +
+  coord_cartesian(xlim = c(-3, 9), ylim = c(-0.4, 0.6), expand = F, clip = 'off') +
+  ylab('Mean R') +
+  xlab('Time (s)')
+
+save_pdf(dir_output_i, str_c(fn_stem, '_trace.pdf'), 6, 4)
+plt_data %>% write_csv(str_c(dir_output_i, fn_stem, '_trace_data.csv'))
+```
+
+```{r eval=FALSE}
+# fig7i bottom: peth correlation bar summary
+fn_stem <- 'cor_peth_summary_facet_bar'
+
+streams_peth_corr_windows <- read.csv(str_c(dir_output_pre, 'lhastr_peth_corr_windows.csv')) %>%
+  mutate(
+    set_id       = set_id       %>% factor(levels = c('FR:Suc', 'WR:Suc', 'WR:NaCl')),
+    time_rel_bin = time_rel_bin %>% factor(levels = c('Pre', 'Sustained', 'Post')),
+    var_x        = var_x        %>% factor(levels = c('LHA:Glut', 'LHA:GABA', 'LHA:Ratio')),
+    var_y        = var_y        %>% factor(levels = key_regions$region_label %>% unique())
+  )
+
+streams_peth_corr_windows %>%
+  filter(var_x %in% c('LHA:GABA', 'LHA:Glut')) %>%
+  ggplot(aes(var_x, r, group = 1, color = var_x, fill = var_x)) +
+  geom_hline(yintercept = 0, linewidth = 1/2) +
+  geom_jitter(aes(group = subject), alpha = 1/3, size = 1, width = 0.2) +
+  stat_summary(fun = 'mean', geom = 'bar', alpha = 1/3, color = NA, width = 0.6) +
+  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0) +
+  theme_ag01(6) +
+  scale_color_manual(values = color_values_regions[c(2, 1)]) +
+  scale_fill_manual(values  = color_values_regions[c(2, 1)]) +
+  facet_grid(. ~ interaction(time_rel_bin, var_y)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+  coord_cartesian(xlim = c(0.5, 2.5), ylim = c(-0.6, 0.6), expand = F, clip = 'off') +
+  scale_y_continuous(breaks = seq(-0.6, 0.6, 0.3)) +
+  xlab('') +
+  ylab('Mean R') +
+  force_panelsizes(rows = unit(2, 'cm'), cols = unit(0.5, 'cm'))
+
+save_pdf(dir_output_i, str_c(fn_stem, '_summary.pdf'), 6, 4)
+```
+
+```{r eval=FALSE}
+stats_results <- streams_peth_corr_windows %>%
+  filter(var_x %in% c('LHA:GABA', 'LHA:Glut')) %>%
+  select(subject, time_rel_bin, var_x, var_y, r) %>%
+  spread(var_x, r) %>%
+  clean_names() %>%
+  tidy_ttest_unpaired(NA, NA, 'lha_glut', 'lha_gaba', 'var_y', 'time_rel_bin') %>%
+  quick_sig()
+
+stats_results %>%
+  ggplot(aes(var_y, time_rel_bin, label = sig_symbol)) +
+  geom_text()
+
+stats_results            %>% write_csv(str_c(dir_output_i, fn_stem, '_stats_ttest.csv'))
+streams_peth_corr_windows %>% write_csv(str_c(dir_output_i, fn_stem, '_data.csv'))
+```

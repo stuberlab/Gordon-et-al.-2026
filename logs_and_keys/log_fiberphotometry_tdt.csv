@@ -1,0 +1,237 @@
+blockname,experiment,subject,date,procedure,exclude,exclude_note,PC0,PC1,PC2,PC3,PC4,PC5,PC6,PC7,PCA,multi_config,fiber_id01,fiber_id02,blockname_multi_subject,trim_time_start,trim_time_end,signal_id01,signal_id02,control_id,sensor01,sensor02,smoothing_window,poly_degree_fitted_control,poly_degree_polyfit,down_sampled_freq,peth_pre,peth_post,events_of_interest,n_remove_first_events,n_remove_last_events,events_manual_fn
+2022_04_25_abb01,abb,abb01,4/25/2022,NA,1,signal looks good but licking was low record next 3d for avg; almost no licking,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_25_abb03,abb,abb03,4/25/2022,NA,1,signal looks good but licking was low record next 3d for avg,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_25_abb04,abb,abb04,4/25/2022,NA,1,signal looks good but licking was low record next 3d for avg,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_25_abb05,abb,abb05,4/25/2022,NA,1,signal looks good but licking was low record next 3d for avg,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_25_abb06,abb,abb06,4/25/2022,NA,1,signal looks good but licking was low record next 3d for avg,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_26_abb01,abb,abb01,4/26/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_26_abb03,abb,abb03,4/26/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_26_abb04,abb,abb04,4/26/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_26_abb05,abb,abb05,4/26/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_26_abb06,abb,abb06,4/26/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_27_abb01,abb,abb01,4/27/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_27_abb03,abb,abb03,4/27/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_27_abb04,abb,abb04,4/27/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_27_abb05,abb,abb05,4/27/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_27_abb06,abb,abb06,4/27/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_28_abb01,abb,abb01,4/28/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_28_abb03,abb,abb03,4/28/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_28_abb04,abb,abb04,4/28/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_28_abb05,abb,abb05,4/28/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_04_28_abb06,abb,abb06,4/28/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_04_abb01,abb,abb01,5/4/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_04_abb03,abb,abb03,5/4/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_04_abb04,abb,abb04,5/4/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_04_abb05,abb,abb05,5/4/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_04_abb06,abb,abb06,5/4/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_05_abb01,abb,abb01,5/5/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_05_abb03,abb,abb03,5/5/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_05_abb04,abb,abb04,5/5/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_05_abb05,abb,abb05,5/5/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_05_abb06,abb,abb06,5/5/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_06_abb01,abb,abb01,5/6/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_06_abb03,abb,abb03,5/6/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_06_abb04,abb,abb04,5/6/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_06_abb05,abb,abb05,5/6/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_06_abb06,abb,abb06,5/6/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_11_abb01,abb,abb01,5/11/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_11_abb03,abb,abb03,5/11/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_11_abb04,abb,abb04,5/11/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_11_abb05,abb,abb05,5/11/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_11_abb06,abb,abb06,5/11/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_12_abb01,abb,abb01,5/12/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_12_abb03,abb,abb03,5/12/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_12_abb04,abb,abb04,5/12/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_12_abb05,abb,abb05,5/12/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_12_abb06,abb,abb06,5/12/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_13_abb01,abb,abb01,5/13/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_13_abb03,abb,abb03,5/13/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_13_abb04,abb,abb04,5/13/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_13_abb05,abb,abb05,5/13/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_13_abb06,abb,abb06,5/13/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_1h,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_25_abb07,abb,abb07,5/25/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_25_abb08,abb,abb08,5/25/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_25_abb09,abb,abb09,5/25/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_25_abb10,abb,abb10,5/25/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_25_abb11,abb,abb11,5/25/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_25_abb12,abb,abb12,5/25/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_26_abb07,abb,abb07,5/26/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_26_abb08,abb,abb08,5/26/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_26_abb09,abb,abb09,5/26/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_26_abb10,abb,abb10,5/26/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_26_abb11,abb,abb11,5/26/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_26_abb12,abb,abb12,5/26/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_27_abb07,abb,abb07,5/27/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_27_abb08,abb,abb08,5/27/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_27_abb09,abb,abb09,5/27/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_27_abb10,abb,abb10,5/27/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_27_abb11,abb,abb11,5/27/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_05_27_abb12,abb,abb12,5/27/2022,NA,0,NA,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_08_abb07,abb,abb07,6/8/2022,NA,1,access period marker missing,lick01,lick02,lick03,lick04,lick05,access_period,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_08_abb08,abb,abb08,6/8/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_08_abb09,abb,abb09,6/8/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_08_abb10,abb,abb10,6/8/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_08_abb11,abb,abb11,6/8/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_08_abb12,abb,abb12,6/8/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_09_abb07,abb,abb07,6/9/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_09_abb08,abb,abb08,6/9/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_09_abb09,abb,abb09,6/9/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_09_abb10,abb,abb10,6/9/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_09_abb11,abb,abb11,6/9/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_09_abb12,abb,abb12,6/9/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_10_abb07,abb,abb07,6/10/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_10_abb08,abb,abb08,6/10/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_10_abb09,abb,abb09,6/10/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_10_abb10,abb,abb10,6/10/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_10_abb11,abb,abb11,6/10/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_10_abb12,abb,abb12,6/10/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_15_abb07,abb,abb07,6/15/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_15_abb08,abb,abb08,6/15/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_15_abb09,abb,abb09,6/15/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_15_abb10,abb,abb10,6/15/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_15_abb11,abb,abb11,6/15/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_15_abb12,abb,abb12,6/15/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_16_abb07,abb,abb07,6/16/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_16_abb08,abb,abb08,6/16/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_16_abb09,abb,abb09,6/16/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_16_abb10,abb,abb10,6/16/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_16_abb11,abb,abb11,6/16/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_16_abb12,abb,abb12,6/16/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_17_abb07,abb,abb07,6/17/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_17_abb08,abb,abb08,6/17/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_17_abb09,abb,abb09,6/17/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_17_abb10,abb,abb10,6/17/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_17_abb11,abb,abb11,6/17/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_lat,nacsh_med,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_17_abb12,abb,abb12,6/17/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_18_aaw09,aaw,aaw09,6/18/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,NA,aaw09,NA,NA,20,20,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_18_aaw11,aaw,aaw11,6/18/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,NA,aaw11,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2022_06_18_abb07,abb,abb07,6/18/2022,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_site,nacsh_med,nacsh_lat,NA,20,NA,465,NA,405,grabda_2m,NA,0.1,3,4,20,10,20,lick_onset; access_period,NA,NA,NA
+2023_03_23_aaw22,aaw,aaw22,3/23/2023,NA,0,NA,NA,NA,NA,NA,lick,access_period,NA,NA,NA,multi_subject,NA,aaw22,2023_03_23_aaw22,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_24_aaw22,aaw,aaw22,3/24/2023,NA,0,NA,NA,NA,NA,NA,lick,access_period,NA,NA,NA,multi_subject,NA,aaw22,2023_03_24_aaw22,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_25_aaw22,aaw,aaw22,3/25/2023,NA,0,NA,NA,NA,NA,NA,lick,access_period,NA,NA,NA,multi_subject,NA,aaw22,2023_03_25_aaw22,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_29_aaw17,aaw,aaw17,3/29/2023,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_subject,aaw17,NA,2023_03_29_aaw17,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_29_aaw18,aaw,aaw18,3/29/2023,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_subject,aaw18,NA,2023_03_29_aaw18,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_29_aaw19,aaw,aaw19,3/29/2023,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_subject,aaw19,NA,2023_03_29_aaw19,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_29_aaw20,aaw,aaw20,3/29/2023,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_subject,aaw20,NA,2023_03_29_aaw20,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_29_aaw22,aaw,aaw22,3/29/2023,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_subject,aaw22,NA,2023_03_29_aaw22,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_30_aaw17,aaw,aaw17,3/30/2023,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_subject,aaw17,NA,2023_03_30_aaw17,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_30_aaw18,aaw,aaw18,3/30/2023,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_subject,aaw18,NA,2023_03_30_aaw18,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_30_aaw19,aaw,aaw19,3/30/2023,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_subject,aaw19,NA,2023_03_30_aaw19,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_30_aaw20,aaw,aaw20,3/30/2023,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_subject,aaw20,NA,2023_03_30_aaw20,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_30_aaw22,aaw,aaw22,3/30/2023,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_subject,aaw22,NA,2023_03_30_aaw22,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_31_aaw17,aaw,aaw17,3/31/2023,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_subject,aaw17,NA,2023_03_31_aaw17,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_31_aaw18,aaw,aaw18,3/31/2023,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_subject,aaw18,NA,2023_03_31_aaw18,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_31_aaw19,aaw,aaw19,3/31/2023,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_subject,aaw19,NA,2023_03_31_aaw19,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_31_aaw20,aaw,aaw20,3/31/2023,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_subject,aaw20,NA,2023_03_31_aaw20,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2023_03_31_aaw22,aaw,aaw22,3/31/2023,NA,0,NA,lick,access_period,NA,NA,NA,NA,NA,NA,NA,multi_subject,aaw22,NA,2023_03_31_aaw22,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,access_period,0,0,NA
+2024_04_27_acd01_r01,acd,acd01,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac_shelllat,nac,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd01_r02,acd,acd01,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac_corr,dls,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd01_r03,acd,acd01,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dms,ts,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd02_r01,acd,acd02,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac,nac_shelllat,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd02_r02,acd,acd02,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dls,nac_corr,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd02_r03,acd,acd02,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,ts,dms,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd03_r01,acd,acd03,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,ts,dms,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd03_r02,acd,acd03,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac,nac_shelllat,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd03_r03,acd,acd03,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dls,nac_corr,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd04_r01,acd,acd04,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dms,ts,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd04_r02,acd,acd04,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac_shelllat,nac,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd04_r03,acd,acd04,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac_corr,dls,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd05_r01,acd,acd05,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac_corr,dls,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd05_r02,acd,acd05,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dms,ts,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd05_r03,acd,acd05,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac_shelllat,nac,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd06_r01,acd,acd06,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dls,nac_corr,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd06_r02,acd,acd06,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,ts,dms,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd06_r03,acd,acd06,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac,nac_shelllat,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd07_r01,acd,acd07,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac,dls,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd07_r02,acd,acd07,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dms,nac_shelllat,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd07_r03,acd,acd07,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac_corr,ts,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd08_r01,acd,acd08,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dls,nac,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd08_r02,acd,acd08,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac_shelllat,dms,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd08_r03,acd,acd08,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,ts,nac_corr,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd09_r01,acd,acd09,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dms,nac_shelllat,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd09_r02,acd,acd09,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac_corr,ts,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd09_r03,acd,acd09,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac,dls,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd10_r01,acd,acd10,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac_shelllat,dms,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd10_r02,acd,acd10,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,ts,nac_corr,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd10_r03,acd,acd10,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dls,nac,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd11_r01,acd,acd11,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,ts,nac_corr,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd11_r02,acd,acd11,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dls,nac,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd11_r03,acd,acd11,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac_shelllat,dms,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd12_r01,acd,acd12,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac_corr,ts,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd12_r02,acd,acd12,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac,dls,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd12_r03,acd,acd12,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dms,nac_shelllat,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd13_r01,acd,acd13,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac,nac_corr,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd13_r02,acd,acd13,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac_shelllat,ts,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd13_r03,acd,acd13,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dms,dls,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd14_r01,acd,acd14,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,ts,nac_shelllat,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd14_r02,acd,acd14,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dls,dms,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_04_27_acd14_r03,acd,acd14,4/27/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac_corr,nac,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_08_06_acd15_r01,acd,acd15,8/6/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dms,ts,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_08_06_acd15_r02,acd,acd15,8/6/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,dls,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_08_06_acd15_r03,acd,acd15,8/6/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac,nac_corr,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_08_06_acd17_r01,acd,acd17,8/6/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dls,nac_shelllat,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_08_06_acd17_r02,acd,acd17,8/6/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac_corr,nac,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_08_06_acd17_r03,acd,acd17,8/6/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,ts,dms,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_08_06_acd18_r01,acd,acd18,8/6/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,dms,ts,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_08_06_acd18_r02,acd,acd18,8/6/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac_shelllat,dls,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2024_08_06_acd18_r03,acd,acd18,8/6/2024,NA,0,NA,opto_stim,NA,NA,NA,NA,NA,NA,NA,NA,NA,nac,nac_corr,NA,20,NA,465,NA,405,grab_da2m,NA,0.1,3,4,20,10,20,opto_stim,1,0,NA
+2025_09_11_acr01_405,acr,acr01,9/11/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr05_405,acr,acr05,9/11/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr06_405,acr,acr06,9/11/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr07_405,acr,acr07,9/12/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr08_405,acr,acr08,9/12/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr01_405_465,acr,acr01,9/11/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr05_405_465,acr,acr05,9/11/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr06_405_465,acr,acr06,9/11/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr07_405_465,acr,acr07,9/12/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr08_405_465,acr,acr08,9/12/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr01_405_560,acr,acr01,9/11/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr05_405_560,acr,acr05,9/11/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr06_405_560,acr,acr06,9/11/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr07_405_560,acr,acr07,9/12/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr08_405_560,acr,acr08,9/12/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr01_405_465_560,acr,acr01,9/11/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr05_405_465_560,acr,acr05,9/11/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_11_acr06_405_465_560,acr,acr06,9/11/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_12_acr07_405_465_560,acr,acr07,9/12/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_12_acr08_405_465_560,acr,acr08,9/12/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_12_31_acr09_405,acr,acr09,12/31/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_12_31_acr10_405,acr,acr10,12/31/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_12_31_acr09_405_465,acr,acr09,12/31/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_12_31_acr10_405_465,acr,acr10,12/31/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_12_31_acr09_405_560,acr,acr09,12/31/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_12_31_acr10_405_560,acr,acr10,12/31/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_12_31_acr09_405_465_560,acr,acr09,12/31/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_12_31_acr10_405_465_560,acr,acr10,12/31/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha,NA,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq01_c1_405,acq,acq01,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_lh,lha_rh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq02_c1_405,acq,acq02,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_lh,lha_rh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq03_c1_405,acq,acq03,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_lh,lha_rh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq04_c1_405,acq,acq04,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_lh,lha_rh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq01_c1_405_465,acq,acq01,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_lh,lha_rh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq02_c1_405_465,acq,acq02,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_lh,lha_rh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq03_c1_405_465,acq,acq03,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_lh,lha_rh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq04_c1_405_465,acq,acq04,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_lh,lha_rh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq01_c1_405_560,acq,acq01,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_lh,lha_rh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq02_c1_405_560,acq,acq02,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_lh,lha_rh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq03_c1_405_560,acq,acq03,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_lh,lha_rh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq04_c1_405_560,acq,acq04,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_lh,lha_rh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq01_c1_405_465_560,acq,acq01,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_lh,lha_rh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq02_c1_405_465_560,acq,acq02,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_lh,lha_rh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq03_c1_405_465_560,acq,acq03,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_lh,lha_rh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq04_c1_405_465_560,acq,acq04,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_lh,lha_rh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq01_c2_405,acq,acq01,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_rh,lha_lh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq02_c2_405,acq,acq02,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_rh,lha_lh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq03_c2_405,acq,acq03,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_rh,lha_lh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq04_c2_405,acq,acq04,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_rh,lha_lh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq01_c2_405_465,acq,acq01,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_rh,lha_lh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq02_c2_405_465,acq,acq02,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_rh,lha_lh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq03_c2_405_465,acq,acq03,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_rh,lha_lh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq04_c2_405_465,acq,acq04,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_rh,lha_lh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq01_c2_405_560,acq,acq01,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_rh,lha_lh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq02_c2_405_560,acq,acq02,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_rh,lha_lh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq03_c2_405_560,acq,acq03,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_rh,lha_lh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq04_c2_405_560,acq,acq04,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_rh,lha_lh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq01_c2_405_465_560,acq,acq01,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_rh,lha_lh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq02_c2_405_465_560,acq,acq02,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_rh,lha_lh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq03_c2_405_465_560,acq,acq03,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_rh,lha_lh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA
+2025_09_16_acq04_c2_405_465_560,acq,acq04,9/16/2025,crosstalk,0,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,lha_rh,lha_lh,NA,20,NA,465,560,405,gcamp6s,jrcamp1b,0.1,3,4,20,10,20,NA,0,0,NA

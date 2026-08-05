@@ -1,0 +1,620 @@
+experiment,subject,target,vector,hemi,rotaiton_adjustment,angle,hit_ap,hit_ml,hit_dv,exclude_da_consumption,exclude_optochar,note
+abb,abb07,NAcShL,GRAB DA2m,right,0,10,1.7,1.5,-4.5,0,0,NA
+abb,abb07,NAcShM,GRAB DA2m,left,0,10,1.7,0.5,-4.7,0,0,NA
+abb,abb08,NAcShL,GRAB DA2m,left,0,10,1.7,1.5,-4.3,0,0,NA
+abb,abb08,NAcShM,GRAB DA2m,right,0,10,1.7,0.8,-4.35,0,0,NA
+abb,abb09,NAcShL,GRAB DA2m,left,0,10,1.34,1.45,-4.55,0,0,NA
+abb,abb09,NAcShM,GRAB DA2m,right,0,10,1.34,0.6,-4.7,0,0,NA
+abb,abb10,NAcShL,GRAB DA2m,right,0,10,1.1,1.45,-4.65,0,0,NA
+abb,abb10,NAcShM,GRAB DA2m,left,0,10,1.18,0.75,-4.5,0,0,NA
+abb,abb11,NAcShL,GRAB DA2m,left,0,10,0.86,1.3,-4.75,0,0,NA
+abb,abb11,NAcShM,GRAB DA2m,right,0,10,1.18,0.75,-4.6,0,0,NA
+abb,abb12,NAcShL,GRAB DA2m,right,0,10,1.42,1.6,-4.55,0,0,NA
+abb,abb12,NAcShM,GRAB DA2m,left,0,10,1.42,0.6,-4.7,0,0,NA
+abo,abo01,NAcCR,GRAB DA2m,right,90,10,1.78,0.7,-4.35,0,0,NA
+abo,abo01,DMS,GRAB DA2m,right,90,5,0.38,1,-2.9,0,0,NA
+abo,abo01,DLS,GRAB DA2m,right,0,5,-0.46,2.7,-3.05,0,0,NA
+abo,abo01,TS,GRAB DA2m,right,0,10,-1.94,3.2,-3,0,0,NA
+abo,abo01,LHA,Chrimson,right,0,0,-1.7,1,-4.95,0,0,NA
+abo,abo01,LHA,Chrimson,left,0,10,-1.7,1.45,-4.95,0,0,NA
+abo,abo02,NAcCR,GRAB DA2m,right,90,10,1.78,0.8,-4.25,0,0,NA
+abo,abo02,DMS,GRAB DA2m,right,90,5,0.14,1.1,-3.05,0,0,NA
+abo,abo02,DLS,GRAB DA2m,right,0,5,-0.58,3,-2.95,0,0,NA
+abo,abo02,TS,GRAB DA2m,right,0,10,-1.94,3.3,-3.3,0,0,NA
+abo,abo02,LHA,Chrimson,right,0,0,-1.82,1.15,-4.9,0,0,NA
+abo,abo02,LHA,Chrimson,left,0,10,-1.82,1.4,-5,0,0,NA
+abo,abo03,NAcCR,GRAB DA2m,right,90,10,1.94,0.9,-4.05,0,0,NA
+abo,abo03,DMS,GRAB DA2m,right,90,5,0.02,1.35,-2.8,0,0,NA
+abo,abo03,DLS,GRAB DA2m,right,0,5,-0.7,2.7,-2.7,0,0,NA
+abo,abo03,TS,GRAB DA2m,right,0,10,-2.06,3.2,-3.3,0,0,NA
+abo,abo03,LHA,Chrimson,right,0,0,-1.82,1.2,-4.8,0,0,NA
+abo,abo03,LHA,Chrimson,left,0,10,-1.82,1.25,-4.75,0,0,NA
+abo,abo04,NAcCR,GRAB DA2m,right,90,10,1.94,0.8,-4.15,0,0,NA
+abo,abo04,DMS,GRAB DA2m,right,90,5,0.38,1.1,-2.8,0,0,NA
+abo,abo04,DLS,GRAB DA2m,right,0,5,-0.46,2.8,-2.8,0,0,NA
+abo,abo04,TS,GRAB DA2m,right,0,10,-1.82,3.1,-3.3,0,0,NA
+abo,abo04,LHA,Chrimson,right,0,0,-1.58,1,-4.85,0,0,NA
+abo,abo04,LHA,Chrimson,left,0,10,-1.58,1.3,-4.65,0,0,NA
+aaw,aaw08,LHA,GCaMP6s; jRCaMP1b,left,0,0,-1.82,1.1,-4.9,0,NA,NA
+aaw,aaw09,LHA,GCaMP6s; jRCaMP1b,left,0,0,-1.58,1.2,-4.95,0,NA,NA
+aaw,aaw10,LHA,GCaMP6s; jRCaMP1b,left,0,0,-1.82,1.25,-4.75,0,NA,NA
+aaw,aaw11,LHA,GCaMP6s; jRCaMP1b,left,0,0,-1.82,1.25,-4.9,0,NA,NA
+aaw,aaw13,LHA,GCaMP6s; jRCaMP1b,left,0,0,-1.82,1.25,-5.25,0,NA,NA
+aaw,aaw14,LHA,GCaMP6s; jRCaMP1b,left,0,0,-1.58,1.1,-5,0,NA,NA
+aaw,aaw15,LHA,GCaMP6s; jRCaMP1b,left,0,0,-1.7,1.2,-5,0,NA,NA
+aaw,aaw17,LHA,GCaMP6s; jRCaMP1b,left,0,0,-1.7,1.1,-4.9,0,NA,NA
+aaw,aaw18,LHA,GCaMP6s; jRCaMP1b,left,0,0,-1.7,1.15,-4.75,0,NA,NA
+aaw,aaw19,LHA,GCaMP6s; jRCaMP1b,right,0,0,-1.7,1.1,-5,0,NA,NA
+aaw,aaw20,LHA,GCaMP6s; jRCaMP1b,right,0,0,-1.7,1.25,-4.8,0,NA,NA
+aaw,aaw22,LHA,GCaMP6s; jRCaMP1b,right,0,0,-1.58,1.1,-5,0,NA,NA
+abo,abo05,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,NA,NA,NA,1,1,tissue lost
+abo,abo05,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.74,0.7,-4.55,0,0,NA
+abo,abo05,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.86,1.65,-4.75,0,0,NA
+abo,abo05,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.14,1.25,-2.2,0,0,NA
+abo,abo05,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.7,2.9,-2.9,0,0,NA
+abo,abo05,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.82,3.15,-3.15,0,0,NA
+abo,abo05,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.82,0.75,-4.8,0,0,NA
+abo,abo05,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.82,1.2,-4.9,0,0,NA
+abo,abo06,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.7,0.8,-4.05,0,0,NA
+abo,abo06,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.86,0.7,-4.5,0,0,NA
+abo,abo06,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.62,1.8,-5.1,0,0,NA
+abo,abo06,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.26,1.1,-2.75,0,0,NA
+abo,abo06,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.94,2.7,-2.65,0,0,NA
+abo,abo06,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-2.18,3.35,-3.5,0,0,NA
+abo,abo06,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.7,1.15,-4.9,0,0,NA
+abo,abo06,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-2.06,1.15,-5,0,0,NA
+abo,abo07,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.94,0.9,-4.15,0,0,NA
+abo,abo07,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.98,0.75,-4.15,0,0,NA
+abo,abo07,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,1.1,1.8,-4.95,0,0,NA
+abo,abo07,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.38,1.25,-2.5,0,0,NA
+abo,abo07,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.46,2.9,-2.9,0,0,NA
+abo,abo07,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.82,3.05,-3.6,0,0,NA
+abo,abo07,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.58,0.8,-5.15,0,0,NA
+abo,abo07,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.82,1,-5,0,0,NA
+abo,abo08,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.7,0.85,-4.1,0,0,NA
+abo,abo08,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.5,0.9,-4.4,0,0,NA
+abo,abo08,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.26,2.3,-4.8,0,0,NA
+abo,abo08,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,-0.22,1.4,-2.65,0,0,NA
+abo,abo08,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.7,2.5,-3.15,0,0,NA
+abo,abo08,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,NA,NA,NA,1,1,cannot locate
+abo,abo08,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-2.06,0.85,-4.85,0,0,NA
+abo,abo08,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-2.06,1,-4.75,0,0,NA
+abo,abo09,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.94,0.9,-4.4,0,0,NA
+abo,abo09,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,1.18,0.9,-4.4,0,0,NA
+abo,abo09,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,1.1,2.35,-5,0,0,NA
+abo,abo09,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.14,1.25,-2.95,0,0,NA
+abo,abo09,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.7,2.8,-3.1,0,0,NA
+abo,abo09,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.82,3.15,-3,0,0,NA
+abo,abo09,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.7,1.2,-4.8,0,0,NA
+abo,abo09,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.7,0.8,-4.95,0,0,NA
+abo,abo10,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.78,0.9,-4.1,0,0,NA
+abo,abo10,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,1.1,0.75,-4.25,0,0,NA
+abo,abo10,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.86,1.8,-4.95,0,0,NA
+abo,abo10,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,-0.22,1.7,-2.6,0,0,NA
+abo,abo10,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.82,2.8,-2.8,0,0,NA
+abo,abo10,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-2.46,3.5,-2.75,1,1,miss
+abo,abo10,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.94,1,-4.8,0,0,NA
+abo,abo10,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.94,1,-4.8,0,0,NA
+abo,abo11,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.94,1.2,-4.4,1,1,tissue lost
+abo,abo11,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,1.18,1,-4.55,0,0,NA
+abo,abo11,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.98,2.4,-5,0,0,NA
+abo,abo11,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.38,1.35,-2.85,0,0,NA
+abo,abo11,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.34,2.9,-3.2,0,0,NA
+abo,abo11,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.7,3.1,-3.45,0,0,NA
+abo,abo11,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.46,1.05,-4.8,0,0,NA
+abo,abo11,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.46,0.95,-4.95,0,0,NA
+abo,abo12,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.94,0.9,-4.05,0,0,NA
+abo,abo12,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.98,0.95,-4.55,0,0,NA
+abo,abo12,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.74,2,-5,0,0,NA
+abo,abo12,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.14,1.4,-2.7,0,0,NA
+abo,abo12,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.58,3,-3.05,0,0,NA
+abo,abo12,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.82,3.2,-3.1,0,0,NA
+abo,abo12,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.82,0.8,-5,0,0,NA
+abo,abo12,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.7,1.1,-5,0,0,NA
+abo,abo13,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.78,1,-4.3,0,0,NA
+abo,abo13,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,1.1,0.8,-4.5,0,0,NA
+abo,abo13,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.86,2.25,-5.2,0,0,NA
+abo,abo13,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.14,1.45,-2.9,0,0,NA
+abo,abo13,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.82,2.9,-3,0,0,NA
+abo,abo13,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.94,3.1,-3.45,0,0,NA
+abo,abo13,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.7,1,-4.8,0,0,NA
+abo,abo13,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.7,1.1,-5,0,0,NA
+abo,abo14,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.94,0.9,-4.1,0,0,NA
+abo,abo14,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,1.1,0.75,-4.5,0,0,NA
+abo,abo14,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.74,0.85,-4.8,0,0,NA
+abo,abo14,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.02,1.45,-2.9,0,0,NA
+abo,abo14,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.7,2.8,-2.9,0,0,NA
+abo,abo14,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.7,3.05,-3.7,0,0,NA
+abo,abo14,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.94,1,-5.05,0,0,NA
+abo,abo14,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.7,1.05,-4.8,0,0,NA
+acd,acd01,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.94,0.9,-4.1,0,0,NA
+acd,acd01,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,1.1,0.8,-4.35,0,0,NA
+acd,acd01,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.86,1.7,-4.9,0,0,NA
+acd,acd01,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.02,1.4,-2.5,0,0,NA
+acd,acd01,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.82,2.75,-2.8,0,0,NA
+acd,acd01,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.82,3.15,-3.35,0,0,NA
+acd,acd01,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.58,0.95,-4.65,0,0,NA
+acd,acd01,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.58,1,-4.6,0,0,NA
+acd,acd02,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.94,0.9,-4.05,0,0,NA
+acd,acd02,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.86,0.65,-4.4,0,0,NA
+acd,acd02,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.62,2.2,-4.9,0,0,NA
+acd,acd02,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.14,1.25,-2.65,0,0,NA
+acd,acd02,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.7,2.5,-3.1,0,0,NA
+acd,acd02,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.7,3.1,-2.95,0,0,NA
+acd,acd02,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.46,1.05,-4.8,0,0,NA
+acd,acd02,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.82,0.8,-4.7,0,0,NA
+acd,acd03,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.94,0.9,-4.05,0,0,NA
+acd,acd03,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.98,0.7,-4.3,0,0,NA
+acd,acd03,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.74,1.8,-4.75,0,0,NA
+acd,acd03,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.14,1.4,-2.65,0,0,NA
+acd,acd03,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.7,2.6,-2.6,0,0,NA
+acd,acd03,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.94,3.2,-3.45,0,0,NA
+acd,acd03,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.82,1.1,-4.7,0,0,NA
+acd,acd03,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.82,0.8,-4.7,0,0,NA
+acd,acd04,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.94,0.9,-4.1,0,0,NA
+acd,acd04,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,1.18,0.75,-4.4,0,0,NA
+acd,acd04,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.98,2.15,-4.7,0,0,NA
+acd,acd04,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.14,1.3,-2.8,0,0,NA
+acd,acd04,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.58,2.9,-2.9,0,0,NA
+acd,acd04,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.82,3.15,-3.25,0,0,NA
+acd,acd04,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.58,1.25,-4.6,0,0,NA
+acd,acd04,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.58,0.95,-4.8,0,0,NA
+acd,acd05,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.94,0.9,-4.2,0,0,NA
+acd,acd05,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,1.1,0.8,-4.4,0,0,NA
+acd,acd05,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.86,1.8,-4.9,0,0,NA
+acd,acd05,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.38,1.3,-2.65,0,0,NA
+acd,acd05,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.46,2.8,-2.8,0,0,NA
+acd,acd05,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.46,3.05,-3.2,0,0,NA
+acd,acd05,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.58,1.1,-4.6,0,0,NA
+acd,acd05,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.7,1,-4.7,0,0,NA
+acd,acd06,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,NA,NA,NA,1,1,tissue lost
+acd,acd06,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.74,0.7,-4.5,0,0,NA
+acd,acd06,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.5,1.85,-4.9,0,0,NA
+acd,acd06,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.14,1.4,-2.7,0,0,NA
+acd,acd06,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.58,2.8,-2.8,0,0,NA
+acd,acd06,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.82,3,-3.5,0,0,NA
+acd,acd06,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.46,1.1,-4.5,0,0,NA
+acd,acd06,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.82,1.1,-4.55,0,0,NA
+acd,acd07,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.78,0.9,-4,0,0,NA
+acd,acd07,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,1.1,0.75,-4.3,0,0,NA
+acd,acd07,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.74,1.8,-5,0,0,NA
+acd,acd07,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.02,1.3,-2.7,0,0,NA
+acd,acd07,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.82,2.6,-2.9,0,0,NA
+acd,acd07,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.94,2.9,-3.5,0,0,NA
+acd,acd07,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.94,1,-4.75,0,0,NA
+acd,acd07,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.94,1.05,-4.75,0,0,NA
+acd,acd08,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.78,0.9,-4.1,0,0,NA
+acd,acd08,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.86,0.9,-4.3,0,0,NA
+acd,acd08,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.62,1.9,-4.8,0,0,NA
+acd,acd08,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.26,1.1,-2.95,0,0,NA
+acd,acd08,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.58,2.85,-2.75,0,0,NA
+acd,acd08,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.46,3.05,-3.25,0,0,NA
+acd,acd08,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.46,1.1,-4.75,0,0,NA
+acd,acd08,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.46,1,-4.75,0,0,NA
+acd,acd09,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.78,0.9,-4.7,0,0,NA
+acd,acd09,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.98,0.7,-4.6,0,0,NA
+acd,acd09,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.74,2.2,-5,0,0,NA
+acd,acd09,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.14,1.15,-3,0,0,NA
+acd,acd09,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.46,2.75,-3,0,0,NA
+acd,acd09,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.94,3,-3.6,0,0,NA
+acd,acd09,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.82,1,-4.8,0,0,NA
+acd,acd09,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.82,1.15,-4.95,0,0,NA
+acd,acd10,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.94,1.1,-4.05,0,0,NA
+acd,acd10,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.98,0.7,-4.25,0,0,NA
+acd,acd10,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.74,1.95,-4.7,0,0,NA
+acd,acd10,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,-0.22,1.7,-2.45,0,0,NA
+acd,acd10,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.94,2.75,-2.65,0,0,NA
+acd,acd10,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-2.18,3.1,-3.4,1,1,miss
+acd,acd10,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.82,1.05,-4.75,0,0,NA
+acd,acd10,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.82,1,-4.7,0,0,NA
+acd,acd11,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.78,1,-4.05,0,0,NA
+acd,acd11,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.98,0.8,-4.5,0,0,NA
+acd,acd11,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.74,2.1,-4.9,0,0,NA
+acd,acd11,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.14,1.4,-2.85,0,0,NA
+acd,acd11,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.82,2.9,-3.05,0,0,NA
+acd,acd11,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-2.06,3.3,-3.55,0,0,NA
+acd,acd11,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.82,1.05,-4.85,0,0,NA
+acd,acd11,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.82,1,-4.7,0,0,NA
+acd,acd12,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.78,1,-4.1,0,0,NA
+acd,acd12,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.98,0.8,-4.55,0,0,NA
+acd,acd12,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.74,2,-5,0,0,NA
+acd,acd12,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.14,1.4,-2.85,0,0,NA
+acd,acd12,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.94,2.8,-2.9,0,0,NA
+acd,acd12,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.94,3.25,-3.3,0,0,NA
+acd,acd12,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.7,1.1,-4.9,0,0,NA
+acd,acd12,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.7,0.9,-5,0,0,NA
+acd,acd13,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.78,0.9,-4.1,0,0,NA
+acd,acd13,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.98,0.8,-4.3,0,0,NA
+acd,acd13,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.74,1.9,-4.8,0,0,NA
+acd,acd13,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,-0.1,1.3,-2.85,0,0,NA
+acd,acd13,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.7,2.6,-2.6,0,0,NA
+acd,acd13,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,NA,NA,NA,1,1,miss
+acd,acd13,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.94,1.05,-4.7,0,0,NA
+acd,acd13,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-2.18,1.2,-4.65,0,0,NA
+acd,acd14,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.94,0.9,-4.6,0,0,NA
+acd,acd14,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.98,0.75,-4.7,0,0,NA
+acd,acd14,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.74,1.9,-5.2,0,0,NA
+acd,acd14,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.02,1.3,-2.9,0,0,NA
+acd,acd14,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.82,2.9,-2.95,0,0,NA
+acd,acd14,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-2.06,3.1,-3.3,0,0,NA
+acd,acd14,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.94,0.9,-4.9,0,0,NA
+acd,acd14,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.94,1,-5,0,0,NA
+acd,acd15,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.94,0.8,-3.9,0,0,NA
+acd,acd15,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.86,0.6,-4.45,0,0,NA
+acd,acd15,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.62,2.2,-4.95,0,0,NA
+acd,acd15,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.38,1.3,-2.85,0,0,NA
+acd,acd15,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.46,2.65,-2.75,0,0,NA
+acd,acd15,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.58,3,-3.6,0,0,NA
+acd,acd15,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.7,0.85,-4.95,0,0,NA
+acd,acd15,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.7,1,-4.7,0,0,NA
+acd,acd17,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.94,0.9,-4.15,0,0,NA
+acd,acd17,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,1.1,0.8,-4.3,0,0,NA
+acd,acd17,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.86,2.4,-5.1,0,0,NA
+acd,acd17,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.38,1.2,-3.15,0,0,NA
+acd,acd17,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.58,2.8,-2.8,0,0,NA
+acd,acd17,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.82,3.2,-3.35,0,0,NA
+acd,acd17,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.58,1,-4.7,0,0,NA
+acd,acd17,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.82,0.9,-4.7,0,0,NA
+acd,acd18,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.94,1.05,-4.15,0,0,NA
+acd,acd18,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.98,0.75,-4.6,0,0,NA
+acd,acd18,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.74,2.5,-5.35,0,0,NA
+acd,acd18,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.14,1.3,-3.2,0,0,NA
+acd,acd18,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.58,3.05,-3.1,0,0,NA
+acd,acd18,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-2.18,3.35,-3.4,0,0,NA
+acd,acd18,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.94,0.9,-5,0,0,NA
+acd,acd18,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-2.06,1,-4.8,0,0,NA
+abw,abw01,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.98,0.8,-3.9,NA,0,NA
+abw,abw01,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.26,1.3,-2.55,NA,0,NA
+abw,abw01,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.46,2.6,-2.6,NA,0,NA
+abw,abw01,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.46,3.05,-3.4,NA,0,NA
+abw,abw02,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.94,0.85,-4.05,NA,0,NA
+abw,abw02,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.02,1.2,-2.85,NA,0,NA
+abw,abw02,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.7,2.6,-2.7,NA,0,NA
+abw,abw02,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.94,3.25,-3.15,NA,0,NA
+abw,abw04,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.94,1.05,-4.15,NA,0,NA
+abw,abw04,DMS,GRAB DA2m; Chrimson-tdTomato,left,90,5,0.38,1.4,-2.45,NA,0,NA
+abw,abw04,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.58,3,-2.7,NA,0,NA
+abw,abw04,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.82,3.2,-3.15,NA,0,NA
+abw,abw05,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.54,0.7,-4.15,NA,0,NA
+abw,abw05,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.14,1.25,-2.95,NA,0,NA
+abw,abw05,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.82,2.6,-2.95,NA,0,NA
+abw,abw05,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.82,3.05,-3.6,NA,0,NA
+abw,abw06,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.7,0.7,-4.1,NA,0,NA
+abw,abw06,DMS,GRAB DA2m; Chrimson-tdTomato,left,90,5,0.26,1.65,-3.1,NA,0,NA
+abw,abw06,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.82,2.85,-2.9,NA,0,NA
+abw,abw06,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.94,3.2,-3.6,NA,0,NA
+abw,abw07,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.78,0.85,-4.2,NA,0,NA
+abw,abw07,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.14,1.4,-3.05,NA,0,NA
+abw,abw07,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.7,2.75,-2.9,NA,0,NA
+abw,abw07,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.82,3.1,-3.5,NA,0,NA
+abw,abw08,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.78,0.95,-4.15,NA,0,NA
+abw,abw08,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.38,1.1,-3.3,NA,0,NA
+abw,abw08,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.58,2.7,-3.1,NA,0,NA
+abw,abw08,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.7,2.95,-3.8,NA,0,NA
+abw,abw09,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.7,0.75,-4.15,NA,0,NA
+abw,abw09,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.26,1.3,-2.9,NA,0,NA
+abw,abw09,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.46,2.8,-3.1,NA,0,NA
+abw,abw09,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.82,3.1,-3,NA,0,NA
+abw,abw11,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.94,0.9,-4.1,NA,0,NA
+abw,abw11,DMS,GRAB DA2m; Chrimson-tdTomato,left,90,5,0.14,1.3,-3.1,NA,0,NA
+abw,abw11,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.7,2.9,-2.9,NA,0,NA
+abw,abw11,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.94,3.05,-3.8,NA,0,NA
+abw,abw12,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.94,0.95,-4.2,NA,0,NA
+abw,abw12,DMS,GRAB DA2m; Chrimson-tdTomato,left,90,5,0.38,1.3,-3.15,NA,0,NA
+abw,abw12,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.46,2.8,-3.05,NA,0,NA
+abw,abw12,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.94,3.1,-3.5,NA,0,NA
+abw,abw13,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.78,0.9,-4.1,NA,0,NA
+abw,abw13,DMS,GRAB DA2m; Chrimson-tdTomato,left,90,5,0.14,1.5,-2.85,NA,0,NA
+abw,abw13,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.7,2.95,-2.95,NA,0,NA
+abw,abw13,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.94,3.2,-3.5,NA,0,NA
+acq,acq01,LHA:GABA,GCaMP6s,left,0,10,-1.82,1.1,-4.7,0,NA,NA
+acq,acq01,LHA:Glut,jRCaMP1b,right,0,10,-1.82,0.85,-4.7,0,NA,NA
+acq,acq01,LHA:Ratio,,,NA,NA,-1.82,0.975,-4.7,0,NA,NA
+acq,acq02,LHA:GABA,GCaMP6s,left,0,10,-1.82,1,-4.7,0,NA,NA
+acq,acq02,LHA:Glut,jRCaMP1b,right,0,10,-1.82,1,-4.7,0,NA,NA
+acq,acq02,LHA:Ratio,,,NA,NA,-1.82,1,-4.7,0,NA,NA
+acq,acq03,LHA:GABA,GCaMP6s,right,0,10,-1.82,0.95,-4.9,0,NA,NA
+acq,acq03,LHA:Glut,jRCaMP1b,left,0,10,-1.82,1.1,-4.8,0,NA,NA
+acq,acq03,LHA:Ratio,,,NA,NA,-1.82,1.025,-4.85,0,NA,NA
+acq,acq04,LHA:GABA,GCaMP6s,left,0,10,-1.82,1.1,-4.8,0,NA,NA
+acq,acq04,LHA:Glut,jRCaMP1b,right,0,10,-1.82,0.95,-4.9,0,NA,NA
+acq,acq04,LHA:Ratio,,,NA,NA,-1.82,1.025,-4.85,0,NA,NA
+aco,aco01,VTA,right,right,0,10,-3.1,0.5,-4.2,0,NA,NA
+aco,aco01,VTA,left,left,0,10,-3.1,0.4,-4.2,0,NA,NA
+aco,aco01,NAcCC,right,right,80,10,1.1,0.7,-4.3,0,NA,NA
+aco,aco01,NAcCC,left,left,80,10,1.1,0.7,-4.25,0,NA,NA
+aco,aco01,DMS,right,right,90,5,0.38,1.45,-2.85,0,NA,NA
+aco,aco01,DMS,left,left,90,5,0.38,1.5,-2.9,0,NA,NA
+aco,aco01,DLS,right,right,0,5,0.14,2.55,-2.9,0,NA,NA
+aco,aco01,DLS,left,left,0,5,0.14,2.9,-3.3,0,NA,NA
+aco,aco01,TS,right,right,0,10,-1.46,3.1,-3.3,0,NA,NA
+aco,aco01,TS,left,left,0,10,-1.46,3.1,-3.5,0,NA,NA
+aco,aco02,VTA,right,right,0,10,-3.3,0.3,-4,0,NA,NA
+aco,aco02,VTA,left,left,0,10,-3.3,0.5,-4.2,0,NA,NA
+aco,aco02,NAcCC,right,right,80,10,0.98,0.7,-4.1,0,NA,NA
+aco,aco02,NAcCC,left,left,80,10,0.98,0.9,-4.15,0,NA,NA
+aco,aco02,DMS,right,right,90,5,0.14,1.2,-2.85,0,NA,NA
+aco,aco02,DMS,left,left,90,5,0.02,1.5,-2.85,0,NA,NA
+aco,aco02,DLS,right,right,0,5,-0.46,2.5,-2.7,0,NA,NA
+aco,aco02,DLS,left,left,0,5,-0.34,2.7,-2.8,0,NA,NA
+aco,aco02,TS,right,right,0,10,-1.7,2.95,-3.25,0,NA,NA
+aco,aco02,TS,left,left,0,10,-1.82,3.2,-3.35,0,NA,NA
+aco,aco03,VTA,right,right,0,10,-3.9,0.6,-4,0,NA,NA
+aco,aco03,VTA,left,left,0,10,-3.9,0.6,-4,0,NA,NA
+aco,aco03,NAcCC,right,right,80,10,0.86,0.9,-4.1,0,NA,NA
+aco,aco03,NAcCC,left,left,80,10,0.86,0.8,-4.1,0,NA,NA
+aco,aco03,DMS,right,right,90,5,0.14,1.5,-2.5,0,NA,NA
+aco,aco03,DMS,left,left,90,5,0.14,1.4,-2.9,0,NA,NA
+aco,aco03,DLS,right,right,0,5,-0.22,2.7,-3,0,NA,NA
+aco,aco03,DLS,left,left,0,5,-0.22,2.8,-3,0,NA,NA
+aco,aco03,TS,right,right,0,10,-1.82,3.2,-3.2,0,NA,NA
+aco,aco03,TS,left,left,0,10,-1.82,3.1,-3.2,0,NA,NA
+aco,aco04,VTA,right,right,0,10,-3.9,0.4,-3.9,0,NA,NA
+aco,aco04,VTA,left,left,0,10,-3.9,0.6,-4.2,0,NA,NA
+aco,aco04,NAcCC,right,right,80,10,0.98,0.9,-4.1,0,NA,NA
+aco,aco04,NAcCC,left,left,80,10,0.98,0.7,-4,0,NA,NA
+aco,aco04,DMS,right,right,90,5,0.14,1.5,-2.6,0,NA,NA
+aco,aco04,DMS,left,left,90,5,0.14,1.4,-2.8,0,NA,NA
+aco,aco04,DLS,right,right,0,5,-0.22,2.7,-3,0,NA,NA
+aco,aco04,DLS,left,left,0,5,-0.22,2.7,-2.8,0,NA,NA
+aco,aco04,TS,right,right,0,10,-1.7,3.1,-3.2,0,NA,NA
+aco,aco04,TS,left,left,0,10,-1.7,3.1,-3.4,0,NA,NA
+aco,aco05,VTA,right,right,0,10,-3.4,0.4,-3.8,0,NA,NA
+aco,aco05,VTA,left,left,0,10,-3.4,0.5,-3.8,0,NA,NA
+aco,aco05,NAcCC,right,right,80,10,0.98,0.7,-4.1,0,NA,NA
+aco,aco05,NAcCC,left,left,80,10,0.98,0.8,-4,0,NA,NA
+aco,aco05,DMS,right,right,90,5,-0.1,1.55,-2.7,0,NA,NA
+aco,aco05,DMS,left,left,90,5,-0.1,1.6,-2.65,0,NA,NA
+aco,aco05,DLS,right,right,0,5,-0.34,2.7,-2.9,0,NA,NA
+aco,aco05,DLS,left,left,0,5,-0.34,3,-2.7,0,NA,NA
+aco,aco05,TS,right,right,0,10,-1.82,3.1,-3,0,NA,NA
+aco,aco05,TS,left,left,0,10,-1.82,3.4,-3.1,0,NA,NA
+aco,aco06,VTA,right,right,0,10,-3.3,0.4,-4.2,0,NA,NA
+aco,aco06,VTA,left,left,0,10,-3.3,0.4,-4.2,0,NA,NA
+aco,aco06,NAcCC,right,right,80,10,1.1,0.7,-4.1,0,NA,NA
+aco,aco06,NAcCC,left,left,80,10,1.1,0.7,-4,0,NA,NA
+aco,aco06,DMS,right,right,90,5,0.14,1.4,-2.75,0,NA,NA
+aco,aco06,DMS,left,left,90,5,0.14,1.5,-2.8,0,NA,NA
+aco,aco06,DLS,right,right,0,5,-0.46,2.7,-2.85,0,NA,NA
+aco,aco06,DLS,left,left,0,5,0.02,2.7,-2.85,0,NA,NA
+aco,aco06,TS,right,right,0,10,-1.46,3,-3.4,0,NA,NA
+aco,aco06,TS,left,left,0,10,-1.46,3.05,-3.25,0,NA,NA
+aco,aco07,VTA,right,right,0,10,-3.8,0.4,-4.2,0,NA,NA
+aco,aco07,VTA,left,left,0,10,-3.5,0.4,-4,0,NA,NA
+aco,aco07,NAcCC,right,right,80,10,0.86,0.75,-4.2,0,NA,NA
+aco,aco07,NAcCC,left,left,80,10,0.86,0.7,-4.15,0,NA,NA
+aco,aco07,DMS,right,right,90,5,0.14,1.3,-3,0,NA,NA
+aco,aco07,DMS,left,left,90,5,0.14,1.4,-2.85,0,NA,NA
+aco,aco07,DLS,right,right,0,5,-0.22,2.55,-2.9,0,NA,NA
+aco,aco07,DLS,left,left,0,5,-0.22,2.7,-2.9,0,NA,NA
+aco,aco07,TS,right,right,0,10,-2.46,3.2,-3.3,1,NA,miss
+aco,aco07,TS,left,left,0,10,-2.46,3.1,-2.1,1,NA,miss
+aco,aco08,VTA,right,right,0,10,-3.4,0.4,-4,0,NA,NA
+aco,aco08,VTA,left,left,0,10,-3.4,0.6,-4,0,NA,NA
+aco,aco08,NAcCC,right,right,80,10,0.86,0.6,-4.1,0,NA,NA
+aco,aco08,NAcCC,left,left,80,10,0.86,0.7,-4.05,0,NA,NA
+aco,aco08,DMS,right,right,90,5,0.02,1.4,-2.7,0,NA,NA
+aco,aco08,DMS,left,left,90,5,0.02,1.6,-2.7,0,NA,NA
+aco,aco08,DLS,right,right,0,5,-0.34,2.6,-3,0,NA,NA
+aco,aco08,DLS,left,left,0,5,-0.34,2.7,-2.85,0,NA,NA
+aco,aco08,TS,right,right,0,10,-1.58,2.85,-3.2,0,NA,NA
+aco,aco08,TS,left,left,0,10,-1.46,3.1,-3.4,0,NA,NA
+aco,aco09,VTA,right,right,0,10,-3.2,0.5,-3.9,0,NA,NA
+aco,aco09,VTA,left,left,0,10,-3.2,0.5,-3.9,0,NA,NA
+aco,aco09,NAcCC,right,right,80,10,0.98,0.75,-4.1,0,NA,NA
+aco,aco09,NAcCC,left,left,80,10,0.98,0.7,-4.1,0,NA,NA
+aco,aco09,DMS,right,right,90,5,0.38,1.1,-2.9,0,NA,NA
+aco,aco09,DMS,left,left,90,5,0.38,1.2,-3,0,NA,NA
+aco,aco09,DLS,right,right,0,5,-0.1,2.6,-2.9,0,NA,NA
+aco,aco09,DLS,left,left,0,5,-0.1,2.65,-2.85,0,NA,NA
+aco,aco09,TS,right,right,0,10,-1.46,3,-3.2,0,NA,NA
+aco,aco09,TS,left,left,0,10,-1.46,2.9,-3.15,0,NA,NA
+aco,aco10,VTA,right,right,0,10,-3.3,0.4,-4.1,0,NA,NA
+aco,aco10,VTA,left,left,0,10,-3.4,0.5,-4,0,NA,NA
+aco,aco10,NAcCC,right,right,80,10,1.18,0.65,-4.2,0,NA,NA
+aco,aco10,NAcCC,left,left,80,10,1.18,0.7,-4.2,0,NA,NA
+aco,aco10,DMS,right,right,90,5,0.38,1.3,-3,0,NA,NA
+aco,aco10,DMS,left,left,90,5,0.38,1.3,-2.9,0,NA,NA
+aco,aco10,DLS,right,right,0,5,0.14,2.6,-2.8,0,NA,NA
+aco,aco10,DLS,left,left,0,5,0.14,2.6,-2.9,0,NA,NA
+aco,aco10,TS,right,right,0,10,-1.34,3.05,-3.2,0,NA,NA
+aco,aco10,TS,left,left,0,10,-1.34,3,-3.4,0,NA,NA
+aco,aco11,VTA,right,right,0,10,-3.4,0.3,-4.1,0,NA,NA
+aco,aco11,VTA,left,left,0,10,-3.4,0.7,-4.2,0,NA,NA
+aco,aco11,NAcCC,right,right,80,10,1.18,0.7,-4.1,0,NA,NA
+aco,aco11,NAcCC,left,left,80,10,1.18,0.85,-4.15,0,NA,NA
+aco,aco11,DMS,right,right,90,5,0.14,1.3,-2.7,0,NA,NA
+aco,aco11,DMS,left,left,90,5,0.14,1.5,-2.8,0,NA,NA
+aco,aco11,DLS,right,right,0,5,-0.1,2.4,-2.85,0,NA,NA
+aco,aco11,DLS,left,left,0,5,-0.1,2.9,-2.95,0,NA,NA
+aco,aco11,TS,right,right,0,10,-1.46,2.9,-3.3,0,NA,NA
+aco,aco11,TS,left,left,0,10,-1.7,3.2,-3.25,0,NA,NA
+aco,aco12,VTA,right,right,0,10,-3.6,0.3,-4.2,0,NA,NA
+aco,aco12,VTA,left,left,0,10,-3.6,0.6,-4.2,0,NA,NA
+aco,aco12,NAcCC,right,right,80,10,0.98,0.8,-4.25,0,NA,NA
+aco,aco12,NAcCC,left,left,80,10,0.98,0.75,-4.4,0,NA,NA
+aco,aco12,DMS,right,right,90,5,0.26,1.25,-3,0,NA,NA
+aco,aco12,DMS,left,left,90,5,0.26,1.4,-3,0,NA,NA
+aco,aco12,DLS,right,right,0,5,-0.1,2.4,-3,0,NA,NA
+aco,aco12,DLS,left,left,0,5,-0.1,2.7,-3,0,NA,NA
+aco,aco12,TS,right,right,0,10,-1.58,2.9,-3.5,0,NA,NA
+aco,aco12,TS,left,left,0,10,-1.58,3.1,-3.4,0,NA,NA
+aco,aco13,VTA,right,right,0,10,-3.8,0.7,-4.3,0,NA,NA
+aco,aco13,VTA,left,left,0,10,-3.8,0.3,-4.3,0,NA,NA
+aco,aco13,NAcCC,right,right,80,10,0.98,0.8,-4.3,0,NA,NA
+aco,aco13,NAcCC,left,left,80,10,0.98,0.9,-4.25,0,NA,NA
+aco,aco13,DMS,right,right,90,5,-0.22,1.7,-2.8,0,NA,NA
+aco,aco13,DMS,left,left,90,5,0.02,1.5,-2.9,0,NA,NA
+aco,aco13,DLS,right,right,0,5,-0.22,2.6,-2.9,0,NA,NA
+aco,aco13,DLS,left,left,0,5,-0.46,2.85,-3.1,0,NA,NA
+aco,aco13,TS,right,right,0,10,-1.94,3.2,-3.3,0,NA,NA
+aco,aco13,TS,left,left,0,10,-1.7,3.1,-3.15,0,NA,NA
+aco,aco14,VTA,right,right,0,10,-3.8,0.3,-4.2,0,NA,NA
+aco,aco14,VTA,left,left,0,10,-3.8,0.6,-4.3,0,NA,NA
+aco,aco14,NAcCC,right,right,80,10,0.86,0.6,-4.3,0,NA,NA
+aco,aco14,NAcCC,left,left,80,10,0.86,0.5,-4.3,0,NA,NA
+aco,aco14,DMS,right,right,90,5,0.02,1.45,-2.9,0,NA,NA
+aco,aco14,DMS,left,left,90,5,0.14,1.6,-3,0,NA,NA
+aco,aco14,DLS,right,right,0,5,-0.34,2.6,-3.2,0,NA,NA
+aco,aco14,DLS,left,left,0,5,-0.22,2.9,-3.05,0,NA,NA
+aco,aco14,TS,right,right,0,10,-1.82,2.9,-3.55,0,NA,NA
+aco,aco14,TS,left,left,0,10,-1.82,3.2,-3.45,0,NA,NA
+aco,aco15,VTA,right,right,0,10,-3.6,0.5,-3.9,0,NA,NA
+aco,aco15,VTA,left,left,0,10,-3.6,0.5,-4,0,NA,NA
+aco,aco15,NAcCC,right,right,80,10,0.74,0.75,-4.3,0,NA,NA
+aco,aco15,NAcCC,left,left,80,10,0.74,0.7,-4.2,0,NA,NA
+aco,aco15,DMS,right,right,90,5,0.14,1.4,-3.9,0,NA,NA
+aco,aco15,DMS,left,left,90,5,0.14,1.4,-3.45,0,NA,NA
+aco,aco15,DLS,right,right,0,5,-0.22,2.6,-2.9,0,NA,NA
+aco,aco15,DLS,left,left,0,5,-0.34,2.8,-2.9,0,NA,NA
+aco,aco15,TS,right,right,0,10,-1.46,3,-3.2,0,NA,NA
+aco,aco15,TS,left,left,0,10,-1.46,3.15,-3.3,0,NA,NA
+aco,aco16,VTA,right,right,0,10,-3.8,0.4,-4.3,0,NA,NA
+aco,aco16,VTA,left,left,0,10,-3.8,0.5,-4.3,0,NA,NA
+aco,aco16,NAcCC,right,right,80,10,0.98,0.7,-4.1,0,NA,NA
+aco,aco16,NAcCC,left,left,80,10,0.98,0.65,-4,0,NA,NA
+aco,aco16,DMS,right,right,90,5,0.14,1.3,-2.85,0,NA,NA
+aco,aco16,DMS,left,left,90,5,-0.1,1.45,-2.7,0,NA,NA
+aco,aco16,DLS,right,right,0,5,-0.22,2.6,-3.1,0,NA,NA
+aco,aco16,DLS,left,left,0,5,-0.22,2.6,-3.1,0,NA,NA
+aco,aco16,TS,right,right,0,10,-1.46,2.9,-3.6,0,NA,NA
+aco,aco16,TS,left,left,0,10,-1.46,3,-3.35,0,NA,NA
+acp,acp01,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.98,0.7,-4.3,0,0,NA
+acp,acp01,NAcCC,GRAB DA2m; Chrimson-tdTomato,right,0,0,0.98,0.6,-4.2,0,0,NA
+acp,acp01,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.86,2.4,-5.1,0,0,NA
+acp,acp01,DMS,GRAB DA2m; Chrimson-tdTomato,left,90,5,0.38,1,-3.1,0,0,NA
+acp,acp01,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,0.14,2.8,-3.4,0,0,NA
+acp,acp01,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.34,2.85,-3.4,1,1,miss
+acp,acp01,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.46,0.85,-4.55,0,0,NA
+acp,acp01,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.46,0.8,-4.8,0,0,NA
+acp,acp02,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.94,1,-4.1,0,0,NA
+acp,acp02,NAcCC,GRAB DA2m; Chrimson-tdTomato,right,0,0,0.86,0.65,-4.5,0,0,NA
+acp,acp02,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.74,1.8,-5,0,0,NA
+acp,acp02,DMS,GRAB DA2m; Chrimson-tdTomato,left,90,5,0.02,1.3,-2.9,0,0,NA
+acp,acp02,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.46,2.9,-3,0,0,NA
+acp,acp02,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.82,3.2,-3.4,0,0,NA
+acp,acp02,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.94,0.9,-4.6,0,0,NA
+acp,acp02,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.82,0.9,-4.6,0,0,NA
+acp,acp04,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.94,1,-4.15,0,0,NA
+acp,acp04,NAcCC,GRAB DA2m; Chrimson-tdTomato,right,0,0,0.98,0.7,-4.5,0,0,NA
+acp,acp04,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.74,1.9,-5.2,0,0,NA
+acp,acp04,DMS,GRAB DA2m; Chrimson-tdTomato,left,90,5,0.02,1.2,-3.1,0,0,NA
+acp,acp04,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.46,2.85,-2.9,0,0,NA
+acp,acp04,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.94,3.3,-3.35,1,1,miss
+acp,acp04,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.82,0.9,-4.7,0,0,NA
+acp,acp04,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.82,0.9,-4.9,0,0,NA
+acp,acp05,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.94,1,-4.25,0,0,NA
+acp,acp05,NAcCC,GRAB DA2m; Chrimson-tdTomato,right,0,0,0.98,0.7,-4.6,0,0,NA
+acp,acp05,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.86,2.1,-5.3,0,0,NA
+acp,acp05,DMS,GRAB DA2m; Chrimson-tdTomato,left,90,5,0.14,1.5,-3.1,0,0,NA
+acp,acp05,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.46,2.85,-3.2,0,0,NA
+acp,acp05,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.58,2.9,-3.3,1,1,miss
+acp,acp05,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.82,0.8,-4.75,0,0,NA
+acp,acp05,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.82,1.1,-4.9,0,0,NA
+acp,acp06,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.78,0.9,-4.15,0,0,NA
+acp,acp06,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.86,0.7,-4.5,0,0,NA
+acp,acp06,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.62,2.45,-4.6,0,0,NA
+acp,acp06,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.14,1.2,-3,0,0,NA
+acp,acp06,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,0.14,2.6,-3,0,0,NA
+acp,acp06,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.58,2.9,-3.35,0,0,NA
+acp,acp06,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.82,0.9,-4.8,0,0,NA
+acp,acp06,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.46,0.9,-4.9,0,0,NA
+acp,acp07,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.94,0.9,-4.1,0,0,NA
+acp,acp07,NAcCC,GRAB DA2m; Chrimson-tdTomato,right,0,0,0.98,0.7,-4.3,0,0,NA
+acp,acp07,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.74,1.9,-4.9,0,0,NA
+acp,acp07,DMS,GRAB DA2m; Chrimson-tdTomato,left,90,5,0.14,1.2,-2.7,0,0,NA
+acp,acp07,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.34,2.9,-3.1,0,0,NA
+acp,acp07,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.7,3.1,-3.4,0,0,NA
+acp,acp07,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.82,0.9,-4.7,0,0,NA
+acp,acp07,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.7,1,-4.75,0,0,NA
+acp,acp08,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.78,0.9,-4.3,0,0,NA
+acp,acp08,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.86,0.7,-4.5,0,0,NA
+acp,acp08,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.62,2.25,-5.1,0,0,NA
+acp,acp08,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.26,1.2,-3,0,0,NA
+acp,acp08,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.34,2.7,-3.1,0,0,NA
+acp,acp08,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.7,3.1,-3.3,0,0,NA
+acp,acp08,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.82,0.9,-4.7,0,0,NA
+acp,acp08,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.82,0.9,-4.8,0,0,NA
+acp,acp09,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.94,1,-4.1,0,0,NA
+acp,acp09,NAcCC,GRAB DA2m; Chrimson-tdTomato,right,0,0,1.1,0.7,-4.4,0,0,NA
+acp,acp09,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,1.1,1.7,-4.75,0,0,NA
+acp,acp09,DMS,GRAB DA2m; Chrimson-tdTomato,left,90,5,0.14,1.2,-3,0,0,NA
+acp,acp09,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.34,2.7,-2.8,0,0,NA
+acp,acp09,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.58,3.1,-3.4,0,0,NA
+acp,acp09,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.34,1,-4.8,0,0,NA
+acp,acp09,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.58,1,-4.6,0,0,NA
+acp,acp11,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.78,1,-4.1,0,0,NA
+acp,acp11,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.98,0.7,-4.3,0,0,NA
+acp,acp11,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.86,1.9,-4.9,0,0,NA
+acp,acp11,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,-0.1,1.3,-2.9,0,0,NA
+acp,acp11,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.7,2.9,-2.8,0,0,NA
+acp,acp11,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.94,3.2,-3.3,0,0,NA
+acp,acp11,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.94,0.9,-4.9,0,0,NA
+acp,acp11,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.94,1.1,-5,0,0,NA
+acp,acp13,NAcCR,GRAB DA2m; Chrimson-tdTomato,left,90,10,1.98,1.1,-3.9,0,0,NA
+acp,acp13,NAcCC,GRAB DA2m; Chrimson-tdTomato,right,0,0,0.86,0.6,-4.4,0,0,NA
+acp,acp13,NAcShL,GRAB DA2m; Chrimson-tdTomato,right,0,10,0.74,2,-4.9,0,0,NA
+acp,acp13,DMS,GRAB DA2m; Chrimson-tdTomato,left,90,5,0.26,1.2,-2.9,0,0,NA
+acp,acp13,DLS,GRAB DA2m; Chrimson-tdTomato,left,0,5,-0.46,3,-3.1,0,0,NA
+acp,acp13,TS,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.7,3.1,-3.3,0,0,NA
+acp,acp13,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.82,1,-4.9,0,0,NA
+acp,acp13,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,0,-1.82,1,-4.9,0,0,NA
+acp,acp14,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.7,0.6,-4.2,0,0,NA
+acp,acp14,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.98,0.9,-4.6,0,0,NA
+acp,acp14,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.38,2.3,-5.1,0,0,NA
+acp,acp14,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.14,1.1,-3,0,0,NA
+acp,acp14,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.34,2.5,-2.9,0,0,NA
+acp,acp14,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.7,3,-3.1,0,0,NA
+acp,acp14,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.94,1.1,-4.8,0,0,NA
+acp,acp14,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.94,1.1,-4.8,0,0,NA
+acp,acp15,NAcCR,GRAB DA2m; Chrimson-tdTomato,right,90,10,1.94,1,-4,0,0,NA
+acp,acp15,NAcCC,GRAB DA2m; Chrimson-tdTomato,left,0,0,0.86,0.9,-4.3,0,0,NA
+acp,acp15,NAcShL,GRAB DA2m; Chrimson-tdTomato,left,0,10,0.74,2.5,-4.8,1,1,miss
+acp,acp15,DMS,GRAB DA2m; Chrimson-tdTomato,right,90,5,0.26,1,-2.9,0,0,NA
+acp,acp15,DLS,GRAB DA2m; Chrimson-tdTomato,right,0,5,-0.46,2.7,-2.8,0,0,NA
+acp,acp15,TS,GRAB DA2m; Chrimson-tdTomato,right,0,10,-1.46,2.9,-3.3,0,0,NA
+acp,acp15,LHA,GRAB DA2m; Chrimson-tdTomato,left,0,10,-1.7,1.1,-4.7,0,0,NA
+acp,acp15,LHA,GRAB DA2m; Chrimson-tdTomato,right,0,0,-1.7,1.1,-4.8,0,0,NA
+acr,acr01,NAcCR,GRAB DA2m,right,90,10,1.94,0.75,-4.1,0,NA,NA
+acr,acr01,DMS,GRAB DA2m,right,90,5,0.38,1.4,-2.8,0,NA,NA
+acr,acr01,DLS,GRAB DA2m,right,0,5,-0.1,2.65,-2.9,0,NA,NA
+acr,acr01,TS,GRAB DA2m,right,0,10,-1.34,3,-3.4,0,NA,NA
+acr,acr01,LHA,GCaMP6s; jRCaMP1b,left,0,0,-1.7,1.2,-4.7,0,NA,NA
+acr,acr03,NAcCR,GRAB DA2m,right,90,10,1.94,0.8,-4,0,NA,NA
+acr,acr03,DMS,GRAB DA2m,right,90,5,0.38,1.25,-2.8,0,NA,NA
+acr,acr03,DLS,GRAB DA2m,right,0,5,-0.46,2.5,-2.5,0,NA,NA
+acr,acr03,TS,GRAB DA2m,right,0,10,-1.82,3.1,-3.4,0,NA,NA
+acr,acr04,NAcCR,GRAB DA2m,left,90,10,1.94,0.9,-3.9,0,NA,NA
+acr,acr04,DMS,GRAB DA2m,left,90,5,0.14,1.4,-2.8,0,NA,NA
+acr,acr04,DLS,GRAB DA2m,left,0,5,-0.34,2.7,-2.6,0,NA,NA
+acr,acr04,TS,GRAB DA2m,left,0,10,-1.34,2.9,-3.3,0,NA,NA
+acr,acr05,NAcCR,GRAB DA2m,left,90,10,1.94,1.1,-3.8,0,NA,NA
+acr,acr05,DMS,GRAB DA2m,left,90,5,0.38,1.55,-2.95,0,NA,NA
+acr,acr05,DLS,GRAB DA2m,left,0,5,0.02,2.9,-3,0,NA,NA
+acr,acr05,TS,GRAB DA2m,left,0,10,-1.34,3.05,-3.25,0,NA,NA
+acr,acr05,LHA,GCaMP6s; jRCaMP1b,right,0,0,-1.58,1.1,-4.8,0,NA,NA
+acr,acr06,NAcCR,GRAB DA2m,right,90,10,1.94,0.75,-4.2,0,NA,NA
+acr,acr06,DMS,GRAB DA2m,right,90,5,0.26,1.35,-2.8,0,NA,NA
+acr,acr06,DLS,GRAB DA2m,right,0,5,-0.34,2.75,-3,0,NA,NA
+acr,acr06,TS,GRAB DA2m,right,0,10,-1.46,3,-3.3,0,NA,NA
+acr,acr06,LHA,GCaMP6s; jRCaMP1b,left,0,0,-1.46,1.3,-4.8,0,NA,NA
+acr,acr07,NAcCR,GRAB DA2m,right,90,10,1.94,1.1,-4.05,0,NA,NA
+acr,acr07,DMS,GRAB DA2m,right,90,5,0.38,1.4,-2.9,0,NA,NA
+acr,acr07,DLS,GRAB DA2m,right,0,5,-0.58,2.55,-2.8,0,NA,NA
+acr,acr07,TS,GRAB DA2m,right,0,10,-1.34,3,-3.3,0,NA,NA
+acr,acr07,LHA,GCaMP6s; jRCaMP1b,left,0,0,-1.82,1.1,-4.65,0,NA,NA
+acr,acr08,NAcCR,GRAB DA2m,left,90,10,1.7,0.8,-4,0,NA,NA
+acr,acr08,DMS,GRAB DA2m,left,90,5,0.26,1.3,-2.6,0,NA,NA
+acr,acr08,DLS,GRAB DA2m,left,0,5,-0.34,2.8,-2.8,0,NA,NA
+acr,acr08,TS,GRAB DA2m,left,0,10,-1.82,3.1,-3.5,0,NA,NA
+acr,acr08,LHA,GCaMP6s; jRCaMP1b,right,0,0,-1.82,1.2,-4.8,0,NA,NA
+acr,acr09,NAcCR,GRAB DA2m,right,90,10,1.94,0.8,-4.1,0,NA,NA
+acr,acr09,DMS,GRAB DA2m,right,90,5,0.38,1.2,-3,0,NA,NA
+acr,acr09,DLS,GRAB DA2m,right,0,5,-0.46,2.85,-3.1,0,NA,NA
+acr,acr09,TS,GRAB DA2m,right,0,10,-1.7,3,-3.65,0,NA,NA
+acr,acr09,LHA,GCaMP6s; jRCaMP1b,left,0,0,-1.7,0.8,-5,1,NA,miss
+acr,acr10,NAcCR,GRAB DA2m,left,90,10,1.94,1.1,-4.05,0,NA,NA
+acr,acr10,DMS,GRAB DA2m,left,90,5,0.14,1.4,-2.9,0,NA,NA
+acr,acr10,DLS,GRAB DA2m,left,0,5,-0.46,2.95,-3.1,0,NA,NA
+acr,acr10,TS,GRAB DA2m,left,0,10,-1.7,3.1,-3.6,0,NA,NA
+acr,acr10,LHA,GCaMP6s; jRCaMP1b,right,0,0,-1.7,0.8,-4.9,1,NA,miss
